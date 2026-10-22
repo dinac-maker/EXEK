@@ -2,8 +2,8 @@ id: indicadores-ventas
 tipo: skill
 nombre: Indicadores de ventas
 descripcion: Indicadores mensuales de ventas de Districash.
-version: 0.2.1
-notas_version: El SQL trae la columna fecha_corte; el SKILL.md indica usar la herramienta ejecutar_skill de ECO y cómo comparar periodos entre años.
+version: 0.2.2
+notas_version: El SKILL.md precisa que las facturas del ticket promedio no incluyen devoluciones (notas crédito), igual que el SQL, también al recalcular periodos con consulta_libre.
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]

@@ -1,4 +1,4 @@
--- Districash · Detección de clientes perdidos · v0.2.1
+-- Districash · Detección de clientes perdidos · v0.2.2
 -- Fuente: fuentes/ventas.yaml (datos de prueba)
 -- Parámetros: @umbral_dias (INT64) y @ventana_dias (INT64)
 -- Cliente = cod_cliente_sucursal (código|sucursal): cada sucursal se trata como un cliente.

@@ -1,4 +1,4 @@
--- Districash · Indicadores de ventas · v0.2.1
+-- Districash · Indicadores de ventas · v0.2.2
 -- Cliente = cod_cliente_sucursal (código|sucursal).
 -- Fuente: fuentes/ventas.yaml
 -- Una fila por mes, desde el inicio de los datos hasta el mes de la fecha de corte.

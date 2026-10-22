@@ -25,6 +25,7 @@ Cliente = cada código de cliente y sucursal (`cod_cliente_sucursal`, por ejempl
 ## Cómo responder
 - Usa el último mes con datos, salvo que pidan otro periodo, y di cuál es la fecha de corte de los datos.
 - Para comparar un año contra el anterior usa el mismo periodo en los dos años (por ejemplo, enero a marzo); para el ticket promedio de un periodo de varios meses, recalcúlalo con `consulta_libre` (venta neta del periodo ÷ facturas del periodo) en lugar de promediar los meses.
+- **Facturas** = números de factura distintos con al menos una línea de venta positiva: las devoluciones (notas crédito) **no** cuentan como factura, igual que en `consulta.sql`. En SQL: `COUNT(DISTINCT IF(Ventas_pesos_neto > 0, Numero_Factura, NULL))`. La venta neta sí resta las devoluciones.
 - Clientes nuevos de los primeros meses de 2024 están inflados, porque los datos empiezan en enero de 2024; adviértelo si los consultan.
 - Cifras en pesos colombianos sin decimales; porcentajes con un decimal.
 - Para tendencias, muestra los últimos 12 meses.

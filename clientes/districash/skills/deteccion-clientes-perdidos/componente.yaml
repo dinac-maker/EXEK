@@ -2,8 +2,8 @@ id: deteccion-clientes-perdidos
 tipo: skill
 nombre: Detección de clientes perdidos
 descripcion: Clientes (sucursales) con más de 60 días y hasta 180 días sin comprar a la fecha de corte, y valor de venta perdido.
-version: 0.2.1
-notas_version: El SQL trae los indicadores clientes_perdidos y valor_venta_perdido calculados sobre todas las filas; el SKILL.md indica usar la herramienta ejecutar_skill de ECO.
+version: 0.2.2
+notas_version: El SKILL.md aclara que perdidos_historico incluye a los perdidos recientes (no son "más de 180 días") y ya no ofrece guardar el listado como artefacto, porque ECO aún no puede hacerlo.
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]

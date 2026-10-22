@@ -170,6 +170,8 @@ Borrador → En prueba → En producción → Retirada
 | 22/10/2026 | Fase 2: los skills de Districash pasan a v0.2.1. El SQL de clientes perdidos trae los indicadores `clientes_perdidos` y `valor_venta_perdido` calculados sobre todas las filas, y el de indicadores de ventas trae `fecha_corte`; así ECO da cifras exactas aunque lea solo parte de las filas. |
 | 22/10/2026 | Fase 2: límites por respuesta de ECO: 25 turnos y USD 2 de costo estimado. Cada consulta devuelve a Claude 50 filas por defecto y 500 como máximo; el total de filas siempre se informa. |
 | 22/10/2026 | Fase 2: ECO de prueba en Cloud Run, servicio `eco-districash` en `us-central1`, sin acceso público (rol Invocador de Cloud Run), desplegado a mano con la acción "Desplegar ECO de prueba" de GitHub. |
+| 22/10/2026 | Fase 2: los skills de Districash pasan a v0.2.2 tras la primera prueba con Vertex AI: `perdidos_historico` incluye a los perdidos recientes (no son "más de 180 días") y las facturas del ticket promedio no incluyen devoluciones, también al recalcular periodos. |
+| 22/10/2026 | Fase 2: ECO probado con Vertex AI desde el computador del autor (Google Cloud SDK con la cuenta de Exek, proyecto de cuota `exekai`): pasan los 5 casos de `pruebas/casos.yaml` y las cifras coinciden con BigQuery. Costo estimado de los 5 casos: USD 0,20 a 0,29. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -474,12 +476,12 @@ Rama `fase2/eco-prueba`.
 | Pieza | Ruta | Estado |
 |---|---|---|
 | Preparación de GCP | `docs/gcp-preparacion.md` | Pasos 1 a 4 hechos; paso 5 (despliegue) pendiente |
-| Motor de ECO | `plataforma/eco/motor.py` | Escrito. Solo usa los skills y agentes del paquete y las dos herramientas de consulta; sin terminal ni archivos. Arranque comprobado; falta probar con Vertex AI |
+| Motor de ECO | `plataforma/eco/motor.py` | Listo y probado con Vertex AI (Sonnet 5.5). Solo usa los skills y agentes del paquete y las dos herramientas de consulta; sin terminal ni archivos |
 | Consulta segura de BigQuery | `plataforma/eco/consultas.py` | Escrita. Reglas probadas: solo `SELECT`, solo tablas declaradas, límite de bytes, sin `INFORMATION_SCHEMA`, parámetros fijos de los skills |
 | Registro de ejecuciones | `plataforma/eco/registro.py` | Escrito: JSONL en `.eco/`; en Cloud Run también en Cloud Logging |
 | Uso por terminal y servicio web | `plataforma/eco/__main__.py`, `plataforma/eco/servicio.py` | Escritos |
-| Pruebas | `plataforma/eco/pruebas.py` | Escrito; falta correrlo con Vertex AI |
+| Pruebas | `plataforma/eco/pruebas.py` | Pasan los 5 casos (22/10/2026). Entre 3 y 23 segundos y entre USD 0,006 y 0,09 por respuesta |
 | Despliegue | `plataforma/eco/Dockerfile`, `.github/workflows/desplegar-eco.yml` | Escritos; esperan el paso 5 de GCP |
-| Skills de Districash | `clientes/districash/skills/` | v0.2.1. SQL probados en BigQuery: 1.561 clientes perdidos, $2.227.171.160 de venta perdida, 4.697 históricos, fecha de corte 31/03/2026 |
+| Skills de Districash | `clientes/districash/skills/` | v0.2.2. SQL probados en BigQuery: 1.561 clientes perdidos, $2.227.171.160 de venta perdida, 4.697 históricos, fecha de corte 31/03/2026 |
 
-Pendiente para cerrar la fase: correr `python -m eco.pruebas` con credenciales de GCP (deben pasar los 5 casos), hacer el paso 5 de GCP y desplegar.
+Pendiente para cerrar la fase: hacer el paso 5 de GCP y desplegar en Cloud Run. Nota: la prueba automática no revisa el ticket promedio; esa cifra se revisó a mano contra BigQuery ($1.712.682 en ene–mar 2026 frente a $1.601.543 en ene–mar 2025).

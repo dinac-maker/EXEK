@@ -1,0 +1,5 @@
+claude-agent-sdk==0.2.172
+google-cloud-bigquery==3.46.2
+PyYAML==6.0.3
+fastapi==0.161.0
+uvicorn==0.54.0

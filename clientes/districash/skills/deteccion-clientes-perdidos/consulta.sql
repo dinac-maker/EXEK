@@ -1,10 +1,12 @@
--- Districash · Detección de clientes perdidos · v0.2.0
+-- Districash · Detección de clientes perdidos · v0.2.2
 -- Fuente: fuentes/ventas.yaml (datos de prueba)
 -- Parámetros: @umbral_dias (INT64) y @ventana_dias (INT64)
 -- Cliente = cod_cliente_sucursal (código|sucursal): cada sucursal se trata como un cliente.
 -- Fecha de corte: última factura de la tabla.
 -- Devuelve los clientes perdidos dentro de la ventana: más de @umbral_dias y hasta
 -- @ventana_dias sin comprar. La columna perdidos_historico cuenta todos los perdidos.
+-- Las columnas clientes_perdidos y valor_venta_perdido traen los indicadores ya
+-- calculados sobre todas las filas, para no depender de cuántas filas se lean.
 
 WITH base AS (
   SELECT
@@ -56,7 +58,10 @@ perdidos AS (
   CROSS JOIN corte AS c
   WHERE DATE_DIFF(c.fecha_corte, u.ultima_compra, DAY) > @umbral_dias
 )
-SELECT *
+SELECT
+  *,
+  COUNT(*) OVER () AS clientes_perdidos,
+  SUM(compra_promedio_mensual) OVER () AS valor_venta_perdido
 FROM perdidos
 WHERE dias_sin_comprar <= @ventana_dias
 ORDER BY compra_promedio_mensual DESC

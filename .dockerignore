@@ -1,0 +1,6 @@
+.git
+.venv
+.eco
+dist
+**/__pycache__
+docs

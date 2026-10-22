@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 .env
+.eco/
 # Archivos que crean Windows, Mac y Google Drive
 desktop.ini
 Thumbs.db

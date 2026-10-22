@@ -2,8 +2,8 @@ id: indicadores-ventas
 tipo: skill
 nombre: Indicadores de ventas
 descripcion: Indicadores mensuales de ventas de Districash.
-version: 0.2.0
-notas_version: Cliente = cod_cliente_sucursal (código|sucursal), igual que en la detección de clientes perdidos.
+version: 0.2.2
+notas_version: El SKILL.md precisa que las facturas del ticket promedio no incluyen devoluciones (notas crédito), igual que el SQL, también al recalcular periodos con consulta_libre.
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]

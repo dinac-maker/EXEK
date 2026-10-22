@@ -1,0 +1,65 @@
+name: Desplegar ECO de prueba
+
+# Se corre a mano desde la pestaña Actions. Requiere el paso 5 de docs/gcp-preparacion.md.
+on:
+  workflow_dispatch:
+    inputs:
+      cliente:
+        description: Cliente cuyo ECO se despliega
+        default: districash
+        required: true
+
+permissions:
+  contents: read
+  id-token: write   # para Workload Identity Federation con GCP
+
+env:
+  PROYECTO: exekai
+  REGION: us-central1
+  REPOSITORIO: eco
+  CUENTA_ECO: eco-prueba@exekai.iam.gserviceaccount.com
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validar el almacén antes de desplegar
+        run: |
+          pip install -r herramientas/requirements.txt
+          python herramientas/validar.py "clientes/${{ inputs.cliente }}"
+
+      - name: Conectar con GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Construir y subir la imagen
+        id: imagen
+        run: |
+          IMAGEN="$REGION-docker.pkg.dev/$PROYECTO/$REPOSITORIO/eco:${GITHUB_SHA::7}"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -f plataforma/eco/Dockerfile --build-arg GIT_COMMIT="${GITHUB_SHA::7}" -t "$IMAGEN" .
+          docker push "$IMAGEN"
+          echo "imagen=$IMAGEN" >> "$GITHUB_OUTPUT"
+
+      - name: Desplegar en Cloud Run (sin acceso público)
+        run: |
+          gcloud run deploy "eco-${{ inputs.cliente }}" \
+            --project "$PROYECTO" --region "$REGION" \
+            --image "${{ steps.imagen.outputs.imagen }}" \
+            --service-account "$CUENTA_ECO" \
+            --no-allow-unauthenticated \
+            --cpu 2 --memory 2Gi --timeout 600 --concurrency 4 --max-instances 2 \
+            --set-env-vars "ECO_CLIENTE=${{ inputs.cliente }},ECO_PROYECTO_GCP=$PROYECTO,ECO_REGION_VERTEX=global" \
+            --labels "cliente=${{ inputs.cliente }},componente=eco"
+          gcloud run services describe "eco-${{ inputs.cliente }}" --project "$PROYECTO" --region "$REGION" \
+            --format 'value(status.url)'

@@ -30,7 +30,7 @@ En la consola de GCP, con el proyecto EXEKAI seleccionado: **Vertex AI → Model
 
 - Claude Sonnet 5.5 (modelo por defecto de ECO)
 - Claude Opus 5.5
-- Claude Haiku 4.5
+- Claude Haiku 5.5
 
 El consumo se cobra en la cuenta de facturación del proyecto EXEKAI.
 
@@ -77,7 +77,25 @@ echo "GCP_SERVICE_ACCOUNT = $GH_SA"
 
 Copia los dos valores que imprime el último comando en GitHub: **Settings → Secrets and variables → Actions → Variables → New repository variable**.
 
-## 5. Avisar al equipo
+## 5. Despliegue de ECO en Cloud Run
+
+Permite que la acción "Desplegar ECO de prueba" de GitHub suba la imagen y despliegue el servicio.
+
+```bash
+gcloud artifacts repositories create eco --repository-format docker --location us-central1 --project "$EXEKAI_ID"
+
+gcloud projects add-iam-policy-binding "$EXEKAI_ID" --member "serviceAccount:$GH_SA" --role roles/run.admin
+gcloud projects add-iam-policy-binding "$EXEKAI_ID" --member "serviceAccount:$GH_SA" --role roles/artifactregistry.writer
+gcloud iam service-accounts add-iam-policy-binding "$ECO_SA" --project "$EXEKAI_ID"   --member "serviceAccount:$GH_SA" --role roles/iam.serviceAccountUser
+```
+
+Para poder llamar al servicio (no es público), cada persona que lo pruebe necesita el rol **Invocador de Cloud Run**:
+
+```bash
+gcloud run services add-iam-policy-binding eco-districash --region us-central1 --project "$EXEKAI_ID"   --member "user:CORREO_DE_LA_PERSONA" --role roles/run.invoker
+```
+
+## 6. Avisar al equipo
 
 Con esto listo, envía:
 
@@ -86,3 +104,5 @@ Con esto listo, envía:
 - confirmación de que las variables quedaron en GitHub.
 
 En ese momento se actualiza `proyecto_consultas` en `clientes/districash/exek.yaml` para que las consultas de ECO se cobren a EXEKAI.
+
+**Estado (22/10/2026):** pasos 1 a 4 hechos; ECO usa la cuenta `eco-prueba`. El paso 5 queda pendiente hasta el despliegue.

@@ -4,7 +4,7 @@ cliente_id: districash
 nombre: Districash
 gcp:
   proyecto_datos: exek-produccion
-  proyecto_consultas: exek-produccion
+  proyecto_consultas: exekai
 zona_horaria: America/Bogota
 moneda: COP
 eco:

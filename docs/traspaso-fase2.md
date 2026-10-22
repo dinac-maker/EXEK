@@ -29,6 +29,13 @@ Documento para retomar el trabajo en una sesión nueva de Claude Code conectada 
 - Cliente perdido: más de 60 días sin comprar; la alerta muestra solo los de **hasta 180 días** (1.561 clientes, $2.227 millones de venta mensual perdida; 4.697 históricos).
 - Agente: lunes 7:00 a. m. (America/Bogota), a roles Comercial y Gerencia, por correo y portal. Tablero en la etiqueta Gerencia, actualización diaria 6:00 a. m.
 
+## Avance de la fase 2 (22/10/2026)
+
+- GCP preparado (pasos 1 a 4 de `docs/gcp-preparacion.md`); ECO usa la cuenta `eco-prueba`.
+- Código en la rama `fase2/eco-prueba`: `plataforma/eco/` (motor, consultas, registro, terminal, servicio web y pruebas), `Dockerfile` y acción de despliegue. Skills de Districash en v0.2.2.
+- ECO probado con Vertex AI: pasan los 5 casos y las cifras coinciden con BigQuery (skills v0.2.2).
+- Falta: hacer el paso 5 de GCP y desplegar. El estado detallado está en la sección 9 de `docs/definiciones.md`.
+
 ## Fase 2 · ECO de prueba de Districash
 
 **Objetivo:** que ECO responda preguntas reales de Districash usando sus skills y su tabla de BigQuery. Sin consola ni portal todavía.

@@ -2,7 +2,7 @@
 casos:
   - pregunta: ¿Cuántos clientes perdidos tenemos?
     debe_usar: [deteccion-clientes-perdidos]
-    debe_mencionar: [60 días, fecha de corte]
+    debe_mencionar: [60 días, 180 días, fecha de corte]
   - pregunta: ¿Qué clientes dejaron de comprar este trimestre?
     debe_usar: [deteccion-clientes-perdidos]
   - pregunta: ¿Cómo nos fue en ventas el mes pasado?

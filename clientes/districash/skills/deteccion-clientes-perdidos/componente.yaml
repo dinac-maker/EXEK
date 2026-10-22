@@ -1,23 +1,28 @@
 id: deteccion-clientes-perdidos
 tipo: skill
 nombre: Detección de clientes perdidos
-descripcion: Clientes con más de 60 días sin comprar a la fecha de corte y valor de venta perdido.
-version: 0.1.0
-notas_version: Primera versión. Umbral de 60 días definido por Districash; fecha de corte = última factura.
+descripcion: Clientes (sucursales) con más de 60 días y hasta 180 días sin comprar a la fecha de corte, y valor de venta perdido.
+version: 0.2.0
+notas_version: Cliente = cod_cliente_sucursal. Ventana de 180 días desde la fecha de corte (los perdidos más antiguos solo se cuentan en perdidos_historico).
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]
 parametros:
   umbral_dias: 60
+  ventana_dias: 180
 archivos:
   instrucciones: SKILL.md
   consulta: consulta.sql
 indicadores:
   - id: clientes_perdidos
     nombre: Clientes perdidos
-    formula: Clientes cuya última compra (sin devoluciones) fue hace más de umbral_dias a la fecha de corte
+    formula: Clientes (sucursales) cuya última compra (sin devoluciones) fue hace más de umbral_dias y hasta ventana_dias, a la fecha de corte
+    unidad: numero
+  - id: clientes_perdidos_historico
+    nombre: Clientes perdidos históricos
+    formula: Todos los clientes con más de umbral_dias sin comprar, sin límite de ventana
     unidad: numero
   - id: valor_venta_perdido
     nombre: Valor de venta perdido
-    formula: Suma de la compra promedio mensual de los 12 meses anteriores a la última compra de los clientes perdidos
+    formula: Suma de la compra promedio mensual (12 meses anteriores a su última compra) de los clientes perdidos dentro de la ventana
     unidad: pesos

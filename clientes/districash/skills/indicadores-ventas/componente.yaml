@@ -2,8 +2,8 @@ id: indicadores-ventas
 tipo: skill
 nombre: Indicadores de ventas
 descripcion: Indicadores mensuales de ventas de Districash.
-version: 0.1.0
-notas_version: Primera versión con los 7 indicadores aprobados.
+version: 0.2.0
+notas_version: Cliente = cod_cliente_sucursal (código|sucursal), igual que en la detección de clientes perdidos.
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]

@@ -3,8 +3,8 @@ tipo: artefacto
 subtipo: tablero
 nombre: Tablero de control gerencia
 descripcion: Indicadores de ventas y clientes perdidos de Districash para la gerencia.
-version: 0.1.0
-notas_version: Primera versión.
+version: 0.2.0
+notas_version: Agrega perdidos históricos; cliente = código|sucursal.
 autor: dina.silva@exek.co
 origen: null
 usa_skills: [indicadores-ventas, deteccion-clientes-perdidos]

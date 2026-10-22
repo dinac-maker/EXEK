@@ -12,15 +12,16 @@ secciones:
       - {indicador: indicadores-ventas.clientes_nuevos}
       - {indicador: deteccion-clientes-perdidos.clientes_perdidos,   alerta_si: mayor_que_mes_anterior}
       - {indicador: deteccion-clientes-perdidos.valor_venta_perdido}
+      - {indicador: deteccion-clientes-perdidos.clientes_perdidos_historico}
   - titulo: Tendencia
     graficos:
       - tipo: linea
         indicador: indicadores-ventas.venta_neta_mes
         meses: 12
         comparar_con: mismo_mes_anio_anterior
-  - titulo: Clientes perdidos
+  - titulo: Clientes perdidos (últimos 180 días)
     tablas:
       - fuente: deteccion-clientes-perdidos
-        columnas: [cliente_id, segmento, vendedor, ultima_compra, dias_sin_comprar, compra_promedio_mensual]
+        columnas: [cliente, segmento, vendedor, ultima_compra, dias_sin_comprar, compra_promedio_mensual]
         orden: compra_promedio_mensual desc
         filas: 20

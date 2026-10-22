@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 22 de octubre de 2026 (v8: fase 1 construida)
+**Última actualización:** 22 de octubre de 2026 (v10: ajustes de Districash y preparación de la fase 2)
 
 ---
 
@@ -153,6 +153,10 @@ Borrador → En prueba → En producción → Retirada
 | 22/10/2026 | P21: validación con GitHub Actions; la revisión en BigQuery se activa con Workload Identity Federation. |
 | 22/10/2026 | P16: tabla real de ventas de Districash: `exek-produccion.NewtonAgentSpace.AgentspaceVentas`. |
 | 22/10/2026 | Los datos de Districash van del 3/01/2024 al 31/03/2026. Los cálculos usan como **fecha de corte la última factura**, no la fecha de hoy. |
+| 22/10/2026 | Proyecto de GCP para ECO: **EXEKAI**. Los datos siguen en `exek-produccion` (solo lectura). |
+| 22/10/2026 | P22: la alerta y el tablero muestran solo los clientes perdidos en los **últimos 180 días desde la fecha máxima de los datos** (más de 60 y hasta 180 días sin comprar). El total histórico queda como indicador de referencia. |
+| 22/10/2026 | P23: el cliente se identifica y se muestra con `cod_cliente_sucursal` (código\|sucursal); cada sucursal cuenta como un cliente. |
+| 22/10/2026 | P24: la tabla de ventas de Districash es **de prueba** por ahora. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -163,9 +167,7 @@ Las preguntas P1 a P15 quedaron resueltas (ver sección 5).
 
 | ID | Pregunta | Propuesta inicial |
 |---|---|---|
-| P22 | Districash: con la regla de 60 días salen **4.444 de 10.499 clientes** como perdidos (venta perdida estimada de $4.935 millones al mes), porque se acumulan los perdidos desde 2024. Solo 1.477 llevan entre 61 y 180 días. ¿La alerta semanal debe mostrar todos o solo los que se perdieron recientemente? | Agregar un parámetro de ventana (por ejemplo, perdidos en los últimos 180 días) sin cambiar la definición de 60 días. |
-| P23 | La tabla de ventas no trae el nombre del cliente. ¿Hay una tabla de clientes en BigQuery para mostrar nombres? | Declararla como fuente y unirla por código. |
-| P24 | Los datos llegan hasta el 31/03/2026. ¿Se actualizan todavía? | Si se actualizan, el agente avisará cuando la fecha de corte tenga más de 7 días. |
+| P25 | ID exacto del proyecto EXEKAI en GCP (el ID va en minúsculas). | Lo entrega quien prepare GCP con `docs/gcp-preparacion.md`. |
 
 ---|---|---|
 | P16 | Confirmar los nombres reales de la tabla de ventas de Districash y sus columnas. | En el ejemplo se usan nombres de referencia. |
@@ -451,5 +453,7 @@ Repositorio `dinac-maker/EXEK`:
 | Validación automática | `.github/workflows/validar.yml` | Lista; la revisión en BigQuery espera la configuración de Workload Identity Federation |
 | Almacén de Districash | `clientes/districash/` | Listo con la tabla real; los dos SQL se probaron en BigQuery |
 
-Pendiente para cerrar la fase: subir los archivos al repositorio y configurar las variables `GCP_WIF_PROVIDER` y `GCP_SERVICE_ACCOUNT` en GitHub.
+**Subida a GitHub el 22/10/2026** (commit "MOver a raiz"): estructura en la raíz, sin archivos de sistema, validación local sin errores.
+
+Pendiente: confirmar en la pestaña *Actions* que la validación corrió en verde, y configurar `GCP_WIF_PROVIDER` y `GCP_SERVICE_ACCOUNT` en GitHub para revisar los SQL en BigQuery.
 

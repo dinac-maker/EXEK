@@ -1,9 +1,9 @@
 id: monitor-clientes-perdidos
 tipo: agente
 nombre: Monitor de clientes perdidos
-descripcion: Revisa semanalmente los clientes con más de 60 días sin comprar y genera una alerta.
-version: 0.1.0
-notas_version: Primera versión.
+descripcion: Revisa semanalmente los clientes perdidos en los últimos 180 días (más de 60 días sin comprar) y genera una alerta.
+version: 0.2.0
+notas_version: Alerta solo con perdidos de los últimos 180 días; cliente = código|sucursal.
 autor: dina.silva@exek.co
 origen: null
 modelo: claude-sonnet-5-5

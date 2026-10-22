@@ -1,17 +1,18 @@
--- Districash · Indicadores de ventas · v0.1.0
+-- Districash · Indicadores de ventas · v0.2.0
+-- Cliente = cod_cliente_sucursal (código|sucursal).
 -- Fuente: fuentes/ventas.yaml
 -- Una fila por mes, desde el inicio de los datos hasta el mes de la fecha de corte.
 -- Clientes activos: con compra (sin devoluciones) en los 60 días previos al cierre del mes.
 
 WITH base AS (
   SELECT
-    CAST(CAST(cod_cliente AS INT64) AS STRING) AS cliente_id,
+    cod_cliente_sucursal AS cliente_id,
     Numero_Factura AS factura_id,
     DATE(Fecha_Factura) AS fecha,
     DATE_TRUNC(DATE(Fecha_Factura), MONTH) AS mes,
     Ventas_pesos_neto AS valor
   FROM `exek-produccion.NewtonAgentSpace.AgentspaceVentas`
-  WHERE cod_cliente IS NOT NULL
+  WHERE cod_cliente_sucursal IS NOT NULL
 ),
 compras AS (
   SELECT * FROM base WHERE valor > 0

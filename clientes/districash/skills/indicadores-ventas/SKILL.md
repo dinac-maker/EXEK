@@ -10,6 +10,8 @@ description: Calcula los indicadores de ventas de Districash por mes (venta neta
 2. Para **clientes perdidos** usa la skill `deteccion-clientes-perdidos`; no la recalcules aquí.
 
 ## Definiciones
+Cliente = cada código de cliente y sucursal (`cod_cliente_sucursal`, por ejemplo `7290|12`).
+
 | Indicador | Fórmula |
 |---|---|
 | Venta neta del mes | Suma de `Ventas_pesos_neto` del mes (las devoluciones restan) |

@@ -1,0 +1,9 @@
+dist/
+__pycache__/
+*.pyc
+.venv/
+.env
+# Archivos que crean Windows, Mac y Google Drive
+desktop.ini
+Thumbs.db
+.DS_Store

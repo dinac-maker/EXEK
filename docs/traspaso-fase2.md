@@ -34,7 +34,8 @@ Documento para retomar el trabajo en una sesión nueva de Claude Code conectada 
 - GCP preparado (pasos 1 a 4 de `docs/gcp-preparacion.md`); ECO usa la cuenta `eco-prueba`.
 - Código en la rama `fase2/eco-prueba`: `plataforma/eco/` (motor, consultas, registro, terminal, servicio web y pruebas), `Dockerfile` y acción de despliegue. Skills de Districash en v0.2.2.
 - ECO probado con Vertex AI: pasan los 5 casos y las cifras coinciden con BigQuery (skills v0.2.2).
-- Falta: hacer el paso 5 de GCP y desplegar. El estado detallado está en la sección 9 de `docs/definiciones.md`.
+- Paso 5 de GCP hecho y ECO desplegado en Cloud Run (`eco-districash`, `us-central1`), sin acceso público. **Fase 2 cumplida.**
+- Siguiente: fase 3 (Consola Exek). El estado detallado está en la sección 9 de `docs/definiciones.md`.
 
 ## Fase 2 · ECO de prueba de Districash
 

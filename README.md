@@ -98,4 +98,14 @@ python -m eco                                                      # conversaci�
 python -m eco.pruebas                                              # corre pruebas/casos.yaml y compara cifras con BigQuery
 ```
 
-Cada respuesta queda en `.eco/ejecuciones.jsonl` (no se sube a Git). El despliegue en Cloud Run se hace con la acción **Desplegar ECO de prueba** (pestaña *Actions*), después del paso 5 de [`docs/gcp-preparacion.md`](docs/gcp-preparacion.md).
+Cada respuesta queda en `.eco/ejecuciones.jsonl` (no se sube a Git).
+
+### Probar el ECO desplegado (Cloud Run)
+
+El servicio `eco-districash` no es público: abrir su dirección en el navegador responde 403. Para probarlo con tu cuenta, abre un túnel y usa la página de pruebas:
+
+```bash
+gcloud run services proxy eco-districash --region us-central1 --project exekai
+```
+
+Luego abre http://localhost:8080/docs → **POST /preguntar** → **Try it out**, escribe `{"pregunta": "...", "usuario": "tu correo"}` y pulsa **Execute**. Para cerrar el túnel pulsa Ctrl + C; si en Windows no responde, cierra la ventana de la terminal. Para que otra persona pueda probarlo, dale el rol Invocador de Cloud Run (paso 5 de `docs/gcp-preparacion.md`). El despliegue en Cloud Run se hace con la acción **Desplegar ECO de prueba** (pestaña *Actions*), después del paso 5 de [`docs/gcp-preparacion.md`](docs/gcp-preparacion.md).

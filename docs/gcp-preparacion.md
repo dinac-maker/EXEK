@@ -105,4 +105,4 @@ Con esto listo, envía:
 
 En ese momento se actualiza `proyecto_consultas` en `clientes/districash/exek.yaml` para que las consultas de ECO se cobren a EXEKAI.
 
-**Estado (22/10/2026):** pasos 1 a 4 hechos; ECO usa la cuenta `eco-prueba`. El paso 5 queda pendiente hasta el despliegue.
+**Estado (22/10/2026):** pasos 1 a 5 hechos; ECO usa la cuenta `eco-prueba` y está desplegado en Cloud Run (`eco-districash`, `us-central1`).

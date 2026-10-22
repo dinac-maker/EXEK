@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -32,8 +33,12 @@ from comun import RAIZ, componentes, leer_yaml  # noqa: E402
 
 
 def commit_actual() -> str | None:
-    r = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=RAIZ, capture_output=True, text=True)
-    return r.stdout.strip() or None
+    """Commit de Git del almacén. Donde no hay Git (por ejemplo, la imagen de ECO) se usa GIT_COMMIT."""
+    try:
+        r = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=RAIZ, capture_output=True, text=True)
+    except OSError:
+        return os.environ.get("GIT_COMMIT") or None
+    return r.stdout.strip() or os.environ.get("GIT_COMMIT") or None
 
 
 def cerrar_dependencias(elegidos: set[str], fichas: dict) -> set[str]:

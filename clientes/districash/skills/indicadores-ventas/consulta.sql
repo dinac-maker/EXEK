@@ -1,8 +1,9 @@
--- Districash · Indicadores de ventas · v0.2.0
+-- Districash · Indicadores de ventas · v0.2.1
 -- Cliente = cod_cliente_sucursal (código|sucursal).
 -- Fuente: fuentes/ventas.yaml
 -- Una fila por mes, desde el inicio de los datos hasta el mes de la fecha de corte.
 -- Clientes activos: con compra (sin devoluciones) en los 60 días previos al cierre del mes.
+-- fecha_corte: última factura registrada (igual en todas las filas).
 
 WITH base AS (
   SELECT
@@ -52,7 +53,8 @@ SELECT
   a.clientes_activos,
   ROUND(SAFE_DIVIDE(p.venta_neta_mes, f.facturas)) AS ticket_promedio,
   ROUND(SAFE_DIVIDE(f.facturas, f.clientes_que_compraron), 2) AS frecuencia_compra,
-  IFNULL(n.clientes_nuevos, 0) AS clientes_nuevos
+  IFNULL(n.clientes_nuevos, 0) AS clientes_nuevos,
+  (SELECT MAX(fecha) FROM base) AS fecha_corte
 FROM por_mes AS p
 LEFT JOIN facturacion AS f USING (mes)
 LEFT JOIN activos AS a USING (mes)

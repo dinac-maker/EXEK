@@ -21,6 +21,7 @@ EXEK/
 │       ├── plugins/<id>/     componente.yaml + conector (solo si los datos no están en BigQuery)
 │       └── pruebas/          Preguntas de prueba para ECO
 ├── herramientas/             Validador, empaquetador y creador de componentes
+├── plataforma/eco/           ECO de prueba: motor, consulta segura de BigQuery, registro y pruebas
 └── .github/workflows/        Validación automática en cada cambio
 ```
 
@@ -75,3 +76,26 @@ La acción se conecta a GCP con Workload Identity Federation, sin llaves guardad
 | `GCP_SERVICE_ACCOUNT` | Cuenta de servicio con permiso `BigQuery Job User` y lectura de los datasets de los clientes |
 
 Si las variables no están, la acción valida todo lo demás y omite la revisión en BigQuery.
+
+## ECO de prueba (fase 2)
+
+ECO responde preguntas con los skills del cliente y sus tablas de BigQuery, usando el Agent SDK de Claude por Vertex AI (proyecto `exekai`). El estado y las decisiones están en [`docs/definiciones.md`](docs/definiciones.md), secciones 5 y 9.
+
+Requisitos para probarlo en tu computador: Python 3.11 o superior y [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), con tus credenciales:
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project exekai
+pip install -r plataforma/eco/requirements.txt
+```
+
+Desde la carpeta `plataforma/`:
+
+```bash
+python -m eco "¿Cuántos clientes perdidos tenemos?"                # una pregunta
+python -m eco --detalle "¿Cómo nos fue en ventas el mes pasado?"   # con skills, consultas, tokens y costo
+python -m eco                                                      # conversación; escribe "salir" para terminar
+python -m eco.pruebas                                              # corre pruebas/casos.yaml y compara cifras con BigQuery
+```
+
+Cada respuesta queda en `.eco/ejecuciones.jsonl` (no se sube a Git). El despliegue en Cloud Run se hace con la acción **Desplegar ECO de prueba** (pestaña *Actions*), después del paso 5 de [`docs/gcp-preparacion.md`](docs/gcp-preparacion.md).

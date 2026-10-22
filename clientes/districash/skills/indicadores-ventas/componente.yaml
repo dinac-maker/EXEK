@@ -2,8 +2,8 @@ id: indicadores-ventas
 tipo: skill
 nombre: Indicadores de ventas
 descripcion: Indicadores mensuales de ventas de Districash.
-version: 0.2.0
-notas_version: Cliente = cod_cliente_sucursal (código|sucursal), igual que en la detección de clientes perdidos.
+version: 0.2.1
+notas_version: El SQL trae la columna fecha_corte; el SKILL.md indica usar la herramienta ejecutar_skill de ECO y cómo comparar periodos entre años.
 autor: dina.silva@exek.co
 origen: null
 fuentes: [ventas]

@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 22 de octubre de 2026 (v11: listo para la fase 2)
+**Última actualización:** 22 de octubre de 2026 (v12: inicio de la fase 2)
 
 ---
 
@@ -159,6 +159,17 @@ Borrador → En prueba → En producción → Retirada
 | 22/10/2026 | P24: la tabla de ventas de Districash es **de prueba** por ahora. |
 | 22/10/2026 | P25: el ID del proyecto EXEKAI es `exekai`. |
 | 22/10/2026 | La construcción continúa en una sesión de Claude Code conectada a `dinac-maker/EXEK` (ver `docs/traspaso-fase2.md`). |
+| 22/10/2026 | Fase 2 · Plan aprobado: motor de ECO en `plataforma/eco/` (Agent SDK de Claude por Vertex AI en `exekai`), consulta segura de BigQuery, registro de ejecuciones, pruebas con `pruebas/casos.yaml` y despliegue en Cloud Run. |
+| 22/10/2026 | Fase 2 · A: en la fase 2 ECO carga **todos** los componentes de Districash, sin filtrar por rol. El filtro por etiquetas del rol llega con la Consola Exek (fase 3). |
+| 22/10/2026 | Fase 2 · B: ECO tiene dos herramientas de BigQuery: `ejecutar_skill` (corre el SQL de un skill con los parámetros de su ficha, que ECO no puede cambiar) y `consulta_libre` (solo `SELECT`, solo tablas declaradas en `fuentes/`, con el límite de bytes del manifiesto y etiquetas de cliente). |
+| 22/10/2026 | Fase 2 · C: ECO se prueba también en el computador del autor, con Google Cloud SDK y credenciales propias (`gcloud auth application-default login`), antes de desplegar. |
+| 22/10/2026 | Fase 2 · D: el registro de ejecuciones empieza en un archivo JSONL; luego pasa a una tabla de BigQuery en `exekai`. |
+| 22/10/2026 | Fase 2: ECO corre con la cuenta de servicio `eco-prueba@exekai.iam.gserviceaccount.com`, con lectura sobre el dataset `exek-produccion:NewtonAgentSpace`. La cuenta `exekai@exekai.iam.gserviceaccount.com` no se usa para ECO. |
+| 22/10/2026 | Modelos Claude habilitados en Vertex AI (`exekai`): Sonnet 5.5 (por defecto de ECO), Opus 5.5 y **Haiku 5.5** (en lugar de Haiku 4.5). |
+| 22/10/2026 | Preparación de GCP para la fase 2 hecha (pasos 1 a 4 de `docs/gcp-preparacion.md`) y variables `GCP_WIF_PROVIDER` y `GCP_SERVICE_ACCOUNT` creadas en GitHub. El paso de despliegue (Artifact Registry y permisos) queda para el final de la fase. |
+| 22/10/2026 | Fase 2: los skills de Districash pasan a v0.2.1. El SQL de clientes perdidos trae los indicadores `clientes_perdidos` y `valor_venta_perdido` calculados sobre todas las filas, y el de indicadores de ventas trae `fecha_corte`; así ECO da cifras exactas aunque lea solo parte de las filas. |
+| 22/10/2026 | Fase 2: límites por respuesta de ECO: 25 turnos y USD 2 de costo estimado. Cada consulta devuelve a Claude 50 filas por defecto y 500 como máximo; el total de filas siempre se informa. |
+| 22/10/2026 | Fase 2: ECO de prueba en Cloud Run, servicio `eco-districash` en `us-central1`, sin acceso público (rol Invocador de Cloud Run), desplegado a mano con la acción "Desplegar ECO de prueba" de GitHub. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -170,9 +181,6 @@ Las preguntas P1 a P15 quedaron resueltas (ver sección 5).
 | ID | Pregunta | Propuesta inicial |
 |---|---|---|
 | — | Sin preguntas abiertas. | |
-
----|---|---|
-| P16 | Confirmar los nombres reales de la tabla de ventas de Districash y sus columnas. | En el ejemplo se usan nombres de referencia. |
 
 ---
 
@@ -459,3 +467,19 @@ Repositorio `dinac-maker/EXEK`:
 
 Pendiente: confirmar en la pestaña *Actions* que la validación corrió en verde, y configurar `GCP_WIF_PROVIDER` y `GCP_SERVICE_ACCOUNT` en GitHub para revisar los SQL en BigQuery.
 
+### Fase 2 · ECO de prueba de Districash (iniciada el 22/10/2026)
+
+Rama `fase2/eco-prueba`.
+
+| Pieza | Ruta | Estado |
+|---|---|---|
+| Preparación de GCP | `docs/gcp-preparacion.md` | Pasos 1 a 4 hechos; paso 5 (despliegue) pendiente |
+| Motor de ECO | `plataforma/eco/motor.py` | Escrito. Solo usa los skills y agentes del paquete y las dos herramientas de consulta; sin terminal ni archivos. Arranque comprobado; falta probar con Vertex AI |
+| Consulta segura de BigQuery | `plataforma/eco/consultas.py` | Escrita. Reglas probadas: solo `SELECT`, solo tablas declaradas, límite de bytes, sin `INFORMATION_SCHEMA`, parámetros fijos de los skills |
+| Registro de ejecuciones | `plataforma/eco/registro.py` | Escrito: JSONL en `.eco/`; en Cloud Run también en Cloud Logging |
+| Uso por terminal y servicio web | `plataforma/eco/__main__.py`, `plataforma/eco/servicio.py` | Escritos |
+| Pruebas | `plataforma/eco/pruebas.py` | Escrito; falta correrlo con Vertex AI |
+| Despliegue | `plataforma/eco/Dockerfile`, `.github/workflows/desplegar-eco.yml` | Escritos; esperan el paso 5 de GCP |
+| Skills de Districash | `clientes/districash/skills/` | v0.2.1. SQL probados en BigQuery: 1.561 clientes perdidos, $2.227.171.160 de venta perdida, 4.697 históricos, fecha de corte 31/03/2026 |
+
+Pendiente para cerrar la fase: correr `python -m eco.pruebas` con credenciales de GCP (deben pasar los 5 casos), hacer el paso 5 de GCP y desplegar.

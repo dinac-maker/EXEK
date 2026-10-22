@@ -14,12 +14,13 @@ description: Identifica los clientes de Districash que se perdieron en los últi
 Las devoluciones no cuentan como compra.
 
 ## Cómo calcular
-1. Ejecuta `consulta.sql` con la herramienta de consulta de BigQuery de la plataforma, con `umbral_dias = 60` y `ventana_dias = 180`.
-2. Cada fila es un cliente perdido reciente: cliente (código|sucursal), segmento, ciudad, vendedor actual, fecha de última compra, días sin comprar, compra promedio mensual de los 12 meses anteriores a su última compra, fecha de corte y total histórico de perdidos.
-3. Indicadores:
-   - **Clientes perdidos (últimos 180 días):** número de filas.
-   - **Valor de venta perdido:** suma de la compra promedio mensual.
-   - **Clientes perdidos históricos:** valor de `perdidos_historico`.
+1. Ejecuta la consulta del skill con la herramienta `ejecutar_skill` (`skill_id: deteccion-clientes-perdidos`). La plataforma aplica `umbral_dias = 60` y `ventana_dias = 180`; no se pueden cambiar.
+2. Cada fila es un cliente perdido reciente: cliente (código|sucursal), segmento, ciudad, vendedor actual, fecha de última compra, días sin comprar, compra promedio mensual de los 12 meses anteriores a su última compra y fecha de corte. Las filas vienen ordenadas de mayor a menor compra promedio.
+3. Indicadores (vienen calculados en cada fila, sobre todos los clientes perdidos, aunque recibas solo una parte de las filas):
+   - **Clientes perdidos (últimos 180 días):** columna `clientes_perdidos` (igual a `filas_total`).
+   - **Valor de venta perdido:** columna `valor_venta_perdido`.
+   - **Clientes perdidos históricos:** columna `perdidos_historico`.
+4. Para resumir por segmento, ciudad o vendedor pide todas las filas (`max_filas` igual a `filas_total`, hasta 500) o usa `consulta_libre` agrupando, con estas mismas definiciones.
 
 ## Cómo responder
 - Empieza con los indicadores y la fecha de corte.

@@ -1,0 +1,112 @@
+name: Validar almacenes
+
+on:
+  pull_request:
+    paths: ["clientes/**", "esquemas/**", "herramientas/**", "plantillas/**", ".github/workflows/validar.yml"]
+  push:
+    branches: [main]
+    paths: ["clientes/**", "esquemas/**", "herramientas/**", "plantillas/**", ".github/workflows/validar.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # para Workload Identity Federation con GCP
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar herramientas
+        run: pip install -r herramientas/requirements.txt
+
+      - name: Elegir clientes a validar
+        id: clientes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git rev-parse -q --verify "$BASE^{commit}" >/dev/null; then
+            BASE=""
+          fi
+          TODOS=$(ls -d clientes/*/ 2>/dev/null | sed 's:/$::' | tr '\n' ' ')
+          if [ -z "$BASE" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ELEGIDOS="$TODOS"
+          else
+            CAMBIOS=$(git diff --name-only "$BASE"...HEAD)
+            if echo "$CAMBIOS" | grep -qE '^(esquemas|herramientas|\.github)/'; then
+              ELEGIDOS="$TODOS"
+            else
+              ELEGIDOS=$(echo "$CAMBIOS" | grep '^clientes/' | cut -d/ -f1-2 | sort -u | while read d; do [ -d "$d" ] && echo "$d"; done | tr '\n' ' ')
+            fi
+          fi
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "lista=$ELEGIDOS" >> "$GITHUB_OUTPUT"
+          echo "Clientes a validar: ${ELEGIDOS:-ninguno}"
+
+      - name: Conectar con GCP (si está configurado)
+        if: steps.clientes.outputs.lista != '' && vars.GCP_WIF_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Validar
+        if: steps.clientes.outputs.lista != ''
+        run: |
+          ARGS=""
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${{ steps.clientes.outputs.base }}" ]; then
+            ARGS="$ARGS --base ${{ steps.clientes.outputs.base }}"
+          fi
+          if [ -n "${{ vars.GCP_WIF_PROVIDER }}" ]; then
+            ARGS="$ARGS --bigquery"
+          else
+            echo "::notice::Revisión en BigQuery omitida: configura GCP_WIF_PROVIDER y GCP_SERVICE_ACCOUNT."
+          fi
+          python herramientas/validar.py ${{ steps.clientes.outputs.lista }} $ARGS
+
+      - name: Armar paquetes
+        if: steps.clientes.outputs.lista != ''
+        run: |
+          for c in ${{ steps.clientes.outputs.lista }}; do
+            python herramientas/empaquetar.py "$c" --salida dist
+          done
+
+      - name: Guardar paquetes
+        if: steps.clientes.outputs.lista != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: paquetes-clientes
+          path: dist/
+          retention-days: 30
+
+  plantillas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r herramientas/requirements.txt
+      - name: Probar que las plantillas generan componentes válidos
+        run: |
+          git config user.email "ci@exek.co"
+          for t in skill agente artefacto plugin; do
+            python herramientas/nuevo.py districash "$t" "prueba-$t" --nombre "Prueba $t"
+          done
+          python - <<'PY'
+          import pathlib, yaml
+          for f in pathlib.Path("clientes/districash").rglob("prueba-*/*"):
+              if f.suffix in (".yaml", ".yml"):
+                  yaml.safe_load(f.read_text(encoding="utf-8"))
+          print("Plantillas OK")
+          PY

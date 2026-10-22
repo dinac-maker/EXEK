@@ -1,0 +1,13 @@
+id: tablero-control-gerencia
+tipo: artefacto
+subtipo: tablero
+nombre: Tablero de control gerencia
+descripcion: Indicadores de ventas y clientes perdidos de Districash para la gerencia.
+version: 0.1.0
+notas_version: Primera versión.
+autor: dina.silva@exek.co
+origen: null
+usa_skills: [indicadores-ventas, deteccion-clientes-perdidos]
+archivos:
+  definicion: tablero.yaml
+actualizacion: programacion        # la frecuencia (diaria 6:00 a. m.) se define en la Consola Exek

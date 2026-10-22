@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exek.co/esquemas/fuente.schema.json",
+  "title": "Fuente de datos (fuentes/<id>.yaml)",
+  "type": "object",
+  "required": ["id", "tipo", "nombre", "descripcion", "ubicacion", "columnas"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}$", "description": "Igual al nombre del archivo sin .yaml"},
+    "tipo": {"enum": ["tabla_bigquery", "vista_bigquery"]},
+    "nombre": {"type": "string"},
+    "descripcion": {"type": "string"},
+    "ubicacion": {"type": "string", "pattern": "^[a-z0-9-]+\\.[A-Za-z0-9_]+\\.[A-Za-z0-9_]+$", "description": "proyecto.dataset.tabla"},
+    "columnas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["nombre", "tipo", "descripcion"],
+        "additionalProperties": false,
+        "properties": {
+          "nombre": {"type": "string"},
+          "tipo": {"type": "string"},
+          "descripcion": {"type": "string"}
+        }
+      }
+    },
+    "notas": {"type": "array", "items": {"type": "string"}},
+    "actualizacion": {"type": "string"}
+  }
+}

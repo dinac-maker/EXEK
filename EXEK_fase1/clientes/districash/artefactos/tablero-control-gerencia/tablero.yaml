@@ -1,0 +1,26 @@
+# Definición del tablero. El portal lo dibuja; los datos salen de las skills indicadas.
+titulo: Tablero de control gerencia
+periodo_por_defecto: ultimo_mes_con_datos
+secciones:
+  - titulo: Resumen del mes
+    tarjetas:
+      - {indicador: indicadores-ventas.venta_neta_mes,       comparar_con: variacion_anio_ant}
+      - {indicador: indicadores-ventas.venta_acumulada_anio}
+      - {indicador: indicadores-ventas.clientes_activos}
+      - {indicador: indicadores-ventas.ticket_promedio}
+      - {indicador: indicadores-ventas.frecuencia_compra}
+      - {indicador: indicadores-ventas.clientes_nuevos}
+      - {indicador: deteccion-clientes-perdidos.clientes_perdidos,   alerta_si: mayor_que_mes_anterior}
+      - {indicador: deteccion-clientes-perdidos.valor_venta_perdido}
+  - titulo: Tendencia
+    graficos:
+      - tipo: linea
+        indicador: indicadores-ventas.venta_neta_mes
+        meses: 12
+        comparar_con: mismo_mes_anio_anterior
+  - titulo: Clientes perdidos
+    tablas:
+      - fuente: deteccion-clientes-perdidos
+        columnas: [cliente_id, segmento, vendedor, ultima_compra, dias_sin_comprar, compra_promedio_mensual]
+        orden: compra_promedio_mensual desc
+        filas: 20

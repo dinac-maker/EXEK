@@ -1,0 +1,5 @@
+titulo: {{NOMBRE}}
+periodo_por_defecto: ultimo_mes_con_datos
+secciones:
+  - titulo: Resumen
+    tarjetas: []     # {indicador: <skill>.<indicador>}

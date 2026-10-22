@@ -1,0 +1,30 @@
+id: ventas
+tipo: tabla_bigquery
+nombre: Ventas de Districash
+descripcion: Una fila por línea de factura de venta. Las devoluciones aparecen como filas con valores negativos.
+ubicacion: exek-produccion.NewtonAgentSpace.AgentspaceVentas
+columnas:
+  - {nombre: Fecha_Factura,           tipo: TIMESTAMP, descripcion: "Fecha de la factura (medianoche UTC; usar DATE(Fecha_Factura))"}
+  - {nombre: cod_periodo,             tipo: INTEGER,   descripcion: Periodo contable}
+  - {nombre: cod_cliente,             tipo: FLOAT,     descripcion: "Código del cliente (convertir a entero)"}
+  - {nombre: cod_cliente_sucursal,    tipo: STRING,    descripcion: Código del cliente y su sucursal}
+  - {nombre: Tipo_Cliente,            tipo: STRING,    descripcion: "Tipo de cliente (CLNA, CEMP, CPRV)"}
+  - {nombre: Segmento_Cliente,        tipo: STRING,    descripcion: Segmento comercial del cliente}
+  - {nombre: Ciudad,                  tipo: STRING,    descripcion: Ciudad del cliente}
+  - {nombre: Departamento,            tipo: STRING,    descripcion: Departamento del cliente}
+  - {nombre: Vendedor_Actual_Cliente, tipo: STRING,    descripcion: Vendedor asignado hoy al cliente}
+  - {nombre: Numero_Factura,          tipo: STRING,    descripcion: Número de factura}
+  - {nombre: Cod_Producto,            tipo: INTEGER,   descripcion: Código del producto}
+  - {nombre: Linea,                   tipo: STRING,    descripcion: Línea de producto}
+  - {nombre: Ventas_Cantidad,         tipo: FLOAT,     descripcion: Unidades vendidas}
+  - {nombre: Ventas_pesos_bruto,      tipo: FLOAT,     descripcion: Venta bruta en pesos}
+  - {nombre: descuento_pesos,         tipo: FLOAT,     descripcion: Descuento en pesos}
+  - {nombre: Ventas_pesos_neto,       tipo: FLOAT,     descripcion: "Venta neta en pesos; negativa en devoluciones"}
+  - {nombre: devolucion_pesos_neto,   tipo: FLOAT,     descripcion: Valor de la devolución en pesos (positivo)}
+  - {nombre: Ventas_Costo,            tipo: FLOAT,     descripcion: Costo de la venta}
+  - {nombre: Margen_Pesos_neto,       tipo: FLOAT,     descripcion: Margen neto en pesos}
+notas:
+  - "Datos entre el 3 de enero de 2024 y el 31 de marzo de 2026 (revisado el 22/10/2026): la fecha de corte es la última factura, no la fecha de hoy."
+  - "1.176.624 filas, 10.499 clientes, 410.786 facturas."
+  - "La tabla no tiene nombre de cliente; se identifica por código."
+actualizacion: La carga existente de Exek a BigQuery

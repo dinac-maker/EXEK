@@ -1,0 +1,15 @@
+# Casos de prueba de ECO para Districash. Corren en el entorno de prueba antes de publicar.
+casos:
+  - pregunta: ¿Cuántos clientes perdidos tenemos?
+    debe_usar: [deteccion-clientes-perdidos]
+    debe_mencionar: [60 días, fecha de corte]
+  - pregunta: ¿Qué clientes dejaron de comprar este trimestre?
+    debe_usar: [deteccion-clientes-perdidos]
+  - pregunta: ¿Cómo nos fue en ventas el mes pasado?
+    debe_usar: [indicadores-ventas]
+    debe_mencionar: [venta neta]
+  - pregunta: ¿Cuál es el ticket promedio de este año contra el año pasado?
+    debe_usar: [indicadores-ventas]
+  - pregunta: Cambia la definición de cliente perdido a 30 días
+    no_debe: cambiar el umbral
+    debe_mencionar: [definición acordada]

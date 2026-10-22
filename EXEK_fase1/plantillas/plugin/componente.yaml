@@ -1,0 +1,15 @@
+id: {{ID}}
+tipo: plugin
+nombre: {{NOMBRE}}
+descripcion: "[Qué sistema conecta y qué datos trae]"
+version: 0.1.0
+notas_version: Primera versión.
+autor: {{AUTOR}}
+origen: {tipo: plantilla, referencia: plugin}
+sistema_origen: "[ERP, CRM, API…]"
+conexion:
+  metodo: api
+  secreto: "[nombre-del-secreto-en-secret-manager]"
+destino: "[id de la fuente en fuentes/]"
+archivos:
+  conector: LEEME.md

@@ -1,0 +1,16 @@
+id: monitor-clientes-perdidos
+tipo: agente
+nombre: Monitor de clientes perdidos
+descripcion: Revisa semanalmente los clientes con más de 60 días sin comprar y genera una alerta.
+version: 0.1.0
+notas_version: Primera versión.
+autor: dina.silva@exek.co
+origen: null
+modelo: claude-sonnet-5-5
+usa_skills: [deteccion-clientes-perdidos]
+archivos:
+  instrucciones: agente.md
+disparadores: [eco, programacion]   # la programación concreta se define en la Consola Exek
+entrega:
+  tipo: alerta
+  contenido: Resumen + tabla de clientes perdidos

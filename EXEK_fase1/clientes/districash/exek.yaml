@@ -1,0 +1,17 @@
+# Manifiesto técnico de Districash.
+# Usuarios, roles, etiquetas, visibilidad y programaciones se administran en la Consola Exek.
+cliente_id: districash
+nombre: Districash
+gcp:
+  proyecto_datos: exek-produccion
+  proyecto_consultas: exek-produccion
+zona_horaria: America/Bogota
+moneda: COP
+eco:
+  modelo_por_defecto: claude-sonnet-5-5
+  limite_bytes_por_consulta: 2000000000
+  instrucciones_cliente: |
+    Districash es una empresa de distribución. Responde en español, con cifras en
+    pesos colombianos sin decimales y fechas en formato día/mes/año.
+    Los datos de ventas no siempre llegan hasta hoy: usa como fecha de corte la
+    fecha de la última factura registrada y dila en la respuesta.

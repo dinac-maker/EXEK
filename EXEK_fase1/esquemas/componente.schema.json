@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exek.co/esquemas/componente.schema.json",
+  "title": "Ficha de componente (componente.yaml)",
+  "type": "object",
+  "required": ["id", "tipo", "nombre", "descripcion", "version", "notas_version", "autor", "archivos"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}$", "description": "Igual al nombre de la carpeta"},
+    "tipo": {"enum": ["skill", "agente", "artefacto", "plugin"]},
+    "nombre": {"type": "string", "minLength": 3},
+    "descripcion": {"type": "string", "minLength": 10},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "notas_version": {"type": "string", "minLength": 5},
+    "autor": {"type": "string", "pattern": "^[^@\\s]+@[^@\\s]+$"},
+    "origen": {
+      "description": "De dónde se copió. Solo referencia; no hay sincronización.",
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "required": ["tipo", "referencia"], "additionalProperties": false,
+         "properties": {"tipo": {"enum": ["plantilla", "cliente"]}, "referencia": {"type": "string"}}}
+      ]
+    },
+    "archivos": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}},
+    "usa_skills": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "fuentes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"tipo": {"const": "skill"}}},
+      "then": {
+        "required": ["fuentes"],
+        "properties": {
+          "archivos": {"required": ["instrucciones"]},
+          "parametros": {"type": "object"},
+          "indicadores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "nombre", "unidad"],
+              "additionalProperties": false,
+              "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+                "nombre": {"type": "string"},
+                "formula": {"type": "string"},
+                "unidad": {"enum": ["pesos", "numero", "porcentaje", "veces", "dias", "unidades"]}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"tipo": {"const": "agente"}}},
+      "then": {
+        "required": ["modelo", "usa_skills", "disparadores", "entrega"],
+        "properties": {
+          "archivos": {"required": ["instrucciones"]},
+          "modelo": {"type": "string", "pattern": "^claude-"},
+          "disparadores": {"type": "array", "minItems": 1, "items": {"enum": ["eco", "programacion", "evento"]}},
+          "entrega": {
+            "type": "object",
+            "required": ["tipo"],
+            "properties": {"tipo": {"enum": ["alerta", "listado", "reporte"]}, "contenido": {"type": "string"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"tipo": {"const": "artefacto"}}},
+      "then": {
+        "required": ["subtipo", "usa_skills"],
+        "properties": {
+          "subtipo": {"enum": ["tablero", "reporte", "listado"]},
+          "archivos": {"required": ["definicion"]},
+          "actualizacion": {"enum": ["programacion", "a_pedido"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"tipo": {"const": "plugin"}}},
+      "then": {
+        "required": ["sistema_origen", "conexion", "destino"],
+        "properties": {
+          "sistema_origen": {"type": "string"},
+          "conexion": {
+            "type": "object",
+            "required": ["metodo", "secreto"],
+            "properties": {
+              "metodo": {"enum": ["api", "base_de_datos", "archivo", "mcp"]},
+              "secreto": {"type": "string", "description": "Nombre del secreto en Secret Manager. Nunca la credencial."}
+            }
+          },
+          "destino": {"type": "string", "description": "id de la fuente de datos donde quedan los datos"}
+        }
+      }
+    }
+  ]
+}

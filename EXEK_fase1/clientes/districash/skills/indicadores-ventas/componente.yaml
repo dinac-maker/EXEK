@@ -1,0 +1,21 @@
+id: indicadores-ventas
+tipo: skill
+nombre: Indicadores de ventas
+descripcion: Indicadores mensuales de ventas de Districash.
+version: 0.1.0
+notas_version: Primera versión con los 7 indicadores aprobados.
+autor: dina.silva@exek.co
+origen: null
+fuentes: [ventas]
+usa_skills: [deteccion-clientes-perdidos]
+archivos:
+  instrucciones: SKILL.md
+  consulta: consulta.sql
+indicadores:
+  - {id: venta_neta_mes,        nombre: Venta neta del mes,             unidad: pesos}
+  - {id: venta_acumulada_anio,  nombre: Venta neta acumulada del año,   unidad: pesos}
+  - {id: variacion_anio_ant,    nombre: Variación contra el año anterior, unidad: porcentaje}
+  - {id: clientes_activos,      nombre: Clientes activos,               unidad: numero}
+  - {id: ticket_promedio,       nombre: Ticket promedio,                unidad: pesos}
+  - {id: frecuencia_compra,     nombre: Frecuencia de compra,           unidad: veces}
+  - {id: clientes_nuevos,       nombre: Clientes nuevos del mes,        unidad: numero}

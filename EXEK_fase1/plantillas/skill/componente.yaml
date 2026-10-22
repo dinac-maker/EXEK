@@ -1,0 +1,14 @@
+id: {{ID}}
+tipo: skill
+nombre: {{NOMBRE}}
+descripcion: "[Descripción corta para la ficha]"
+version: 0.1.0
+notas_version: Primera versión.
+autor: {{AUTOR}}
+origen: {tipo: plantilla, referencia: skill}
+fuentes: []          # ids de fuentes/ que usa la consulta
+parametros: {}
+archivos:
+  instrucciones: SKILL.md
+  consulta: consulta.sql
+indicadores: []

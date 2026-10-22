@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exek.co/esquemas/cliente.schema.json",
+  "title": "Manifiesto del cliente (exek.yaml)",
+  "type": "object",
+  "required": ["cliente_id", "nombre", "gcp", "zona_horaria", "moneda", "eco"],
+  "additionalProperties": false,
+  "properties": {
+    "cliente_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}$", "description": "Igual al nombre de la carpeta del cliente"},
+    "nombre": {"type": "string", "minLength": 2},
+    "gcp": {
+      "type": "object",
+      "required": ["proyecto_datos", "proyecto_consultas"],
+      "additionalProperties": false,
+      "properties": {
+        "proyecto_datos": {"type": "string", "description": "Proyecto de GCP donde están los datos del cliente"},
+        "proyecto_consultas": {"type": "string", "description": "Proyecto de GCP que ejecuta y paga las consultas"},
+        "cuenta_servicio": {"type": "string"}
+      }
+    },
+    "zona_horaria": {"type": "string"},
+    "moneda": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "eco": {
+      "type": "object",
+      "required": ["modelo_por_defecto"],
+      "additionalProperties": false,
+      "properties": {
+        "modelo_por_defecto": {"type": "string", "pattern": "^claude-"},
+        "limite_bytes_por_consulta": {"type": "integer", "minimum": 1},
+        "instrucciones_cliente": {"type": "string"}
+      }
+    }
+  }
+}

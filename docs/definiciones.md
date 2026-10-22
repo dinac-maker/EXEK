@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 22 de octubre de 2026 (v10: ajustes de Districash y preparación de la fase 2)
+**Última actualización:** 22 de octubre de 2026 (v11: listo para la fase 2)
 
 ---
 
@@ -157,6 +157,8 @@ Borrador → En prueba → En producción → Retirada
 | 22/10/2026 | P22: la alerta y el tablero muestran solo los clientes perdidos en los **últimos 180 días desde la fecha máxima de los datos** (más de 60 y hasta 180 días sin comprar). El total histórico queda como indicador de referencia. |
 | 22/10/2026 | P23: el cliente se identifica y se muestra con `cod_cliente_sucursal` (código\|sucursal); cada sucursal cuenta como un cliente. |
 | 22/10/2026 | P24: la tabla de ventas de Districash es **de prueba** por ahora. |
+| 22/10/2026 | P25: el ID del proyecto EXEKAI es `exekai`. |
+| 22/10/2026 | La construcción continúa en una sesión de Claude Code conectada a `dinac-maker/EXEK` (ver `docs/traspaso-fase2.md`). |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -167,7 +169,7 @@ Las preguntas P1 a P15 quedaron resueltas (ver sección 5).
 
 | ID | Pregunta | Propuesta inicial |
 |---|---|---|
-| P25 | ID exacto del proyecto EXEKAI en GCP (el ID va en minúsculas). | Lo entrega quien prepare GCP con `docs/gcp-preparacion.md`. |
+| — | Sin preguntas abiertas. | |
 
 ---|---|---|
 | P16 | Confirmar los nombres reales de la tabla de ventas de Districash y sus columnas. | En el ejemplo se usan nombres de referencia. |

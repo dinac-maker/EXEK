@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 
 from registro.almacen import Almacen, Conflicto, Duplicado, ahora
 
@@ -288,11 +289,9 @@ class Registro:
             raise ErrorRegistro(f"No existe el componente '{componente_id}'.")
         return c
 
-    def versiones(self, cliente_id: str, componente_id: str) -> list[dict]:
-        """Versiones de un componente, de la más nueva a la más vieja, con su estado."""
-        comp = self.componente(cliente_id, componente_id)
-        vs = self.almacen.listar("versiones", cliente_id=cliente_id, componente_id=componente_id)
-        vs.sort(key=lambda v: tupla_version(v["numero"]), reverse=True)
+    @staticmethod
+    def _con_estados(comp: dict, vs: list[dict]) -> list[dict]:
+        vs = sorted(vs, key=lambda v: tupla_version(v["numero"]), reverse=True)
         prod = comp["version_produccion"] if comp["estado"] == "activo" else None
         for v in vs:
             if prod and v["numero"] == prod:
@@ -303,12 +302,28 @@ class Registro:
                 v["estado"] = "anterior"
         return vs
 
+    def versiones(self, cliente_id: str, componente_id: str) -> list[dict]:
+        """Versiones de un componente, de la más nueva a la más vieja, con su estado."""
+        comp = self.componente(cliente_id, componente_id)
+        return self._con_estados(comp, self.almacen.listar("versiones", cliente_id=cliente_id, componente_id=componente_id))
+
     def version_en_prueba(self, cliente_id: str, componente_id: str) -> str | None:
         """La versión más nueva que todavía no está publicada, si la hay."""
         for v in self.versiones(cliente_id, componente_id):
             if v["estado"] == "en_prueba":
                 return v["numero"]
         return None
+
+    def almacen_completo(self, cliente_id: str) -> list[dict]:
+        """Componentes del cliente con sus versiones y su versión en prueba, en dos consultas
+        (en BigQuery cada consulta tarda alrededor de un segundo)."""
+        todas = self.almacen.listar("versiones", cliente_id=cliente_id)
+        salida = []
+        for c in self.componentes(cliente_id):
+            vs = self._con_estados(c, [v for v in todas if v["componente_id"] == c["componente_id"]])
+            salida.append({**c, "versiones": vs,
+                           "en_prueba": next((v["numero"] for v in vs if v["estado"] == "en_prueba"), None)})
+        return salida
 
     def registrar_version(self, cliente_id: str, componente_id: str, tipo: str, nombre: str, numero: str,
                           commit: str, notas: str | None = None, autor: str | None = None,
@@ -395,6 +410,52 @@ class Registro:
             return []
         suyas = set(rol["etiquetas"])
         return [c for c in self.publicados(cliente_id) if suyas & set(c["etiquetas"])]
+
+    def almacen_global(self) -> list[dict]:
+        """Componentes de todos los clientes, para buscar en todo el almacén y saber qué
+        cliente tiene cada uno. Cuatro consultas en paralelo, sin importar cuántos clientes haya."""
+        with ThreadPoolExecutor(max_workers=4) as hilos:
+            f = {t: hilos.submit(self.almacen.listar, t) for t in ("clientes", "etiquetas", "versiones", "componentes")}
+        clientes = {c["cliente_id"]: c for c in f["clientes"].result()}
+        etiquetas = {(e["cliente_id"], e["etiqueta_id"]): e["nombre"] for e in f["etiquetas"].result()}
+        todas = f["versiones"].result()
+        salida = []
+        for c in f["componentes"].result():
+            vs = self._con_estados(c, [v for v in todas if v["cliente_id"] == c["cliente_id"]
+                                       and v["componente_id"] == c["componente_id"]])
+            cli = clientes.get(c["cliente_id"], {})
+            salida.append({**c, "cliente_nombre": cli.get("nombre", c["cliente_id"]),
+                           "cliente_estado": cli.get("estado"),
+                           "etiquetas_nombres": [etiquetas.get((c["cliente_id"], e), e) for e in c["etiquetas"]],
+                           "en_prueba": next((v["numero"] for v in vs if v["estado"] == "en_prueba"), None),
+                           "ultima_nota": vs[0]["notas"] if vs else None})
+        salida.sort(key=lambda c: (c["nombre"].lower(), c["cliente_nombre"].lower()))
+        return salida
+
+    def acceso_eco(self, correo: str) -> dict:
+        """Lo que ECO necesita para atender a un usuario: su cliente, su rol, los componentes
+        que puede usar y todos los publicados (para las dependencias), cada uno con el commit
+        de su versión en producción. Si no puede usar ECO, el error explica por qué."""
+        u = self.usuario(correo)
+        if u is None:
+            raise ErrorRegistro("Tu usuario no está registrado para usar ECO. Pide acceso al equipo de Exek.")
+        if u["estado"] != "activo":
+            raise ErrorRegistro("Tu usuario está inactivo. Pide al equipo de Exek que lo active.")
+        cliente = self.cliente(u["cliente_id"])
+        if cliente["estado"] != "activo":
+            raise ErrorRegistro(f"{cliente['nombre']} está inactivo en la plataforma.")
+        rol = self.almacen.obtener("roles", cliente_id=cliente["cliente_id"], rol_id=u["rol_id"])
+        suyas = set(rol["etiquetas"]) if rol else set()
+        publicados = []
+        for c in self.almacen_completo(cliente["cliente_id"]):
+            if c["estado"] != "activo" or not c["version_produccion"]:
+                continue
+            v = next((v for v in c["versiones"] if v["numero"] == c["version_produccion"]), None)
+            if v is not None:
+                publicados.append({**{k: c[k] for k in ("componente_id", "tipo", "nombre", "etiquetas", "version_produccion")},
+                                   "commit": v["commit"]})
+        elegidos = [c for c in publicados if suyas & set(c["etiquetas"])]
+        return {"usuario": u, "cliente": cliente, "rol": rol, "elegidos": elegidos, "publicados": publicados}
 
     def permitidos_para_usuario(self, correo: str) -> tuple[dict | None, list[dict]]:
         """(usuario, componentes que puede usar). Sin usuario activo, no hay componentes."""

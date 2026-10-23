@@ -36,3 +36,12 @@ pre.cmd{background:#0f1430;color:#e8ebff;padding:10px 12px;border-radius:6px;ove
 .pasos li{margin-bottom:12px}
 .etq-check{display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0}
 details summary{cursor:pointer;color:var(--azul)}
+.muted[hidden]{display:none}
+header.hd{flex-wrap:wrap;row-gap:8px}
+.titulo{white-space:nowrap}
+main{min-width:0;overflow-x:auto}
+@media (max-width:900px){.titulo span{display:none}.cuerpo{grid-template-columns:150px minmax(0,1fr)}main{padding:16px}}
+.alcance{display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;padding:3px;border:1px solid var(--borde);border-radius:var(--radio);background:var(--blanco)}
+.alcance span{padding:0 8px}
+.alcance a{padding:5px 12px;border-radius:6px;text-decoration:none;color:var(--suave)}
+.alcance a.on{background:var(--azul);color:#fff}

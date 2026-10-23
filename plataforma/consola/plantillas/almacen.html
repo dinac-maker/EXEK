@@ -8,10 +8,11 @@
   <form method="post" action="/c/{{ cliente.cliente_id }}/sincronizar"><button>Buscar versiones nuevas</button></form>
 </div>
 {% if aviso %}<div class="aviso info">{{ aviso }}</div>{% endif %}
+{{ alcance(cliente, false) }}
 {{ barra("tabla-almacen", "Buscar componente", [
   ("tipo", "Tipo", TIPOS.values()|list),
   ("etiqueta", "Etiqueta", etiquetas.values()|list|sort),
-  ("estado", "Estado", ["Por publicar", "Publicado", "Sin publicar", "Retirado"])]) }}
+  ("estado", "Estado", ["Por publicar", "Publicado", "Sin publicar", "Retirado"])], q) }}
 <table id="tabla-almacen">
 <thead><tr><th>Componente</th><th>Tipo</th><th>Etiquetas</th><th>En producción</th><th>Portal</th><th></th></tr></thead>
 <tbody>

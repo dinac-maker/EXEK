@@ -64,9 +64,12 @@ def _tipo_parametro(valor: Any) -> str:
 class ConsultasBigQuery:
     """Ejecuta las consultas de una conversación y anota cada una en `self.consultas`."""
 
-    def __init__(self, cliente: Cliente, paquete: Paquete):
+    def __init__(self, cliente: Cliente, paquete: Paquete, credenciales=None):
+        """`credenciales`: las de la cuenta de ECO del cliente (eco-<cliente>), para que una
+        consulta no pueda leer datos de otro cliente. Sin ellas se usan las del entorno."""
         self.cliente = cliente
         self.paquete = paquete
+        self.credenciales = credenciales
         self.consultas: list[dict] = []
         self._bq = None
 
@@ -75,7 +78,7 @@ class ConsultasBigQuery:
         if self._bq is None:
             from google.cloud import bigquery
 
-            self._bq = bigquery.Client(project=self.cliente.proyecto_consultas)
+            self._bq = bigquery.Client(project=self.cliente.proyecto_consultas, credentials=self.credenciales)
         return self._bq
 
     def _config(self, componente: str, parametros: list | None = None, dry_run: bool = False):

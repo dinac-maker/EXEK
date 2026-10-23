@@ -45,8 +45,13 @@ class Paquete:
 
 
 def armar(cliente: Cliente, salida: Path | None = None) -> Paquete:
+    """Modo prueba: el almacén tal como está en el repositorio (todas las versiones más nuevas)."""
     salida = salida or Path(tempfile.mkdtemp(prefix="eco-paquete-"))
-    ruta = empaquetar(cliente.carpeta, salida, None)
+    return cargar(empaquetar(cliente.carpeta, salida, None))
+
+
+def cargar(ruta: Path) -> Paquete:
+    """Lee un paquete ya armado (del repositorio o el publicado desde Cloud Storage)."""
     plugin = json.loads((ruta / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     manifiesto = json.loads((ruta / "exek" / "manifiesto.json").read_text(encoding="utf-8"))
     paquete = Paquete(ruta=ruta, nombre_plugin=plugin["name"], componentes=manifiesto["componentes"])

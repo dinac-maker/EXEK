@@ -1,13 +1,10 @@
 name: Desplegar ECO de prueba
 
 # Se corre a mano desde la pestaña Actions. Requiere el paso 5 de docs/gcp-preparacion.md.
+# Un solo ECO para todos los clientes (decisión del 23/10/2026): en modo producción el
+# cliente sale del registro según el correo del usuario.
 on:
   workflow_dispatch:
-    inputs:
-      cliente:
-        description: Cliente cuyo ECO se despliega
-        default: districash
-        required: true
 
 permissions:
   contents: read
@@ -24,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # las pruebas leen el historial de versiones en Git
 
       - uses: actions/setup-python@v5
         with:
@@ -32,7 +31,12 @@ jobs:
       - name: Validar el almacén antes de desplegar
         run: |
           pip install -r herramientas/requirements.txt
-          python herramientas/validar.py "clientes/${{ inputs.cliente }}"
+          python herramientas/validar.py clientes/*/
+
+      - name: Probar el registro y el modo producción de ECO
+        run: |
+          pip install -r plataforma/eco/requirements.txt -r plataforma/requirements-pruebas.txt
+          cd plataforma && python -m pytest registro eco/test_acceso.py -q
 
       - name: Conectar con GCP
         uses: google-github-actions/auth@v2
@@ -53,13 +57,13 @@ jobs:
 
       - name: Desplegar en Cloud Run (sin acceso público)
         run: |
-          gcloud run deploy "eco-${{ inputs.cliente }}" \
+          gcloud run deploy eco \
             --project "$PROYECTO" --region "$REGION" \
             --image "${{ steps.imagen.outputs.imagen }}" \
             --service-account "$CUENTA_ECO" \
             --no-allow-unauthenticated \
             --cpu 2 --memory 2Gi --timeout 600 --concurrency 4 --max-instances 2 \
-            --set-env-vars "ECO_CLIENTE=${{ inputs.cliente }},ECO_PROYECTO_GCP=$PROYECTO,ECO_REGION_VERTEX=global" \
-            --labels "cliente=${{ inputs.cliente }},componente=eco"
-          gcloud run services describe "eco-${{ inputs.cliente }}" --project "$PROYECTO" --region "$REGION" \
+            --set-env-vars "ECO_CLIENTE=districash,ECO_PROYECTO_GCP=$PROYECTO,ECO_REGION_VERTEX=global" \
+            --labels "componente=eco"
+          gcloud run services describe eco --project "$PROYECTO" --region "$REGION" \
             --format 'value(status.url)'

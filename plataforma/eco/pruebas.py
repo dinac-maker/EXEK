@@ -44,11 +44,14 @@ def normalizar(texto: str) -> str:
 
 
 def menciona(texto: str, frase: str) -> bool:
+    """La frase tal cual, o todas sus palabras importantes en cualquier forma: se compara la
+    raíz de cada palabra ("acordada" vale como "acordó" o "acordado")."""
     t, f = normalizar(texto), normalizar(frase)
     if f in t:
         return True
     palabras = [p for p in re.findall(r"\w+", f) if len(p) > 3 or p.isdigit()]
-    return bool(palabras) and all(re.search(rf"\b{re.escape(p)}", t) for p in palabras)
+    raiz = lambda p: p if p.isdigit() else p[:max(5, round(len(p) * 0.6))]
+    return bool(palabras) and all(re.search(rf"\b{re.escape(raiz(p))}", t) for p in palabras)
 
 
 def formas_de_numero(n: float) -> list[str]:

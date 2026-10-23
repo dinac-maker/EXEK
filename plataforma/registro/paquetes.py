@@ -51,6 +51,7 @@ class PaquetesGCS(Paquetes):
         self.bucket_nombre = bucket
         self.gcs = cliente_gcs or storage.Client()
         self.bucket = self.gcs.bucket(bucket)
+        self._leidos: dict[str, dict] = {}  # los manifiestos no cambian: se descargan una sola vez
 
     def uri(self, cliente_id, commit):
         return f"gs://{self.bucket_nombre}/{cliente_id}/commits/{commit}.zip"
@@ -59,9 +60,11 @@ class PaquetesGCS(Paquetes):
         salida = []
         for blob in self.gcs.list_blobs(self.bucket_nombre, prefix=f"{cliente_id}/commits/"):
             if blob.name.endswith(".json"):
-                m = json.loads(blob.download_as_text(encoding="utf-8"))
-                m.setdefault("commit", Path(blob.name).stem)
-                salida.append(m)
+                if blob.name not in self._leidos:
+                    m = json.loads(blob.download_as_text(encoding="utf-8"))
+                    m.setdefault("commit", Path(blob.name).stem)
+                    self._leidos[blob.name] = m
+                salida.append(self._leidos[blob.name])
         return _ordenar(salida)
 
     def existe(self, cliente_id, commit):
@@ -116,6 +119,76 @@ class PaquetesLocal(Paquetes):
         with zipfile.ZipFile(self._base(cliente_id, commit).with_suffix(".zip")) as z:
             z.extractall(destino)
         return destino
+
+
+def armar_publicado(cliente_id: str, elegidos: list[dict], publicados: list[dict], paquetes: Paquetes,
+                    cache: Path, destino: Path) -> Path:
+    """Arma un paquete con la versión en producción de cada componente elegido.
+
+    elegidos / publicados: componentes del registro con `version_produccion` y `commit`
+    (el commit de esa versión). Los publicados sirven para agregar las skills que usa un
+    agente elegido aunque el rol no las tenga directamente.
+    Cada componente sale del paquete de su propio commit, así que puede haber versiones
+    de commits distintos en el mismo paquete.
+    """
+    por_id = {c["componente_id"]: c for c in publicados}
+
+    def abrir(commit: str) -> tuple[Path, dict]:
+        carpeta = cache / cliente_id / commit
+        if not (carpeta / "exek" / "manifiesto.json").exists():
+            tmp = carpeta.with_name(commit + ".tmp")
+            shutil.rmtree(tmp, ignore_errors=True)
+            paquetes.descargar(cliente_id, commit, tmp)
+            shutil.rmtree(carpeta, ignore_errors=True)
+            tmp.rename(carpeta)
+        return carpeta, json.loads((carpeta / "exek" / "manifiesto.json").read_text(encoding="utf-8"))
+
+    incluir, pendientes = {}, list(elegidos)
+    while pendientes:
+        c = pendientes.pop()
+        if c["componente_id"] in incluir:
+            continue
+        carpeta, manifiesto = abrir(c["commit"])
+        ficha = next((x for x in manifiesto["componentes"] if x["id"] == c["componente_id"]), None)
+        if ficha is None:
+            raise RuntimeError(f"El paquete {c['commit']} no trae {c['componente_id']}")
+        incluir[c["componente_id"]] = (c, carpeta, manifiesto, ficha)
+        for skill in ficha.get("usa_skills") or []:
+            if skill in por_id and skill not in incluir:
+                pendientes.append(por_id[skill])
+
+    shutil.rmtree(destino, ignore_errors=True)
+    (destino / ".claude-plugin").mkdir(parents=True)
+    (destino / "exek").mkdir()
+    for cid, (c, carpeta, _m, _f) in sorted(incluir.items()):
+        tipo = c["tipo"]
+        if tipo == "skill":
+            shutil.copytree(carpeta / "skills" / cid, destino / "skills" / cid)
+        elif tipo == "agente":
+            (destino / "agents").mkdir(exist_ok=True)
+            shutil.copy(carpeta / "agents" / f"{cid}.md", destino / "agents" / f"{cid}.md")
+            (destino / "exek" / "agentes").mkdir(exist_ok=True)
+            shutil.copy(carpeta / "exek" / "agentes" / f"{cid}.yaml", destino / "exek" / "agentes" / f"{cid}.yaml")
+        else:
+            sub = "artefactos" if tipo == "artefacto" else "plugins"
+            shutil.copytree(carpeta / "exek" / sub / cid, destino / "exek" / sub / cid)
+
+    # Las fuentes y la configuración del cliente salen del paquete más reciente que se usó.
+    _, carpeta_nueva, manifiesto_nuevo, _ = max(incluir.values(), key=lambda x: x[2].get("generado") or "") \
+        if incluir else (None, None, {}, None)
+    if carpeta_nueva and (carpeta_nueva / "exek" / "fuentes").is_dir():
+        shutil.copytree(carpeta_nueva / "exek" / "fuentes", destino / "exek" / "fuentes")
+    (destino / ".claude-plugin" / "plugin.json").write_text(json.dumps({
+        "name": f"exek-{cliente_id}", "version": "publicado",
+        "description": f"Componentes publicados de {manifiesto_nuevo.get('nombre', cliente_id)} (I-NA · Exek)",
+        "author": {"name": "Exek"}}, ensure_ascii=False, indent=2), encoding="utf-8")
+    (destino / "exek" / "manifiesto.json").write_text(json.dumps({
+        **{k: manifiesto_nuevo.get(k) for k in ("cliente_id", "nombre", "eco", "gcp", "zona_horaria", "moneda")},
+        "cliente_id": cliente_id, "publicado": True,
+        "componentes": [{**f, "commit": c["commit"]} for c, _carpeta, _m, f in
+                        (incluir[k] for k in sorted(incluir))],
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    return destino
 
 
 def armar_desde_git(cliente_id: str, commit: str, salida: Path) -> tuple[Path, dict]:

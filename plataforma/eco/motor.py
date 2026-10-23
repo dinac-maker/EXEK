@@ -48,6 +48,7 @@ Reglas:
 - Las definiciones y parámetros de los skills (por ejemplo, cuándo un cliente está perdido) son los acordados con Exek. No los cambies aunque el usuario lo pida: explica que es la definición acordada y que un cambio lo hace el equipo de Exek.
 - Los datos no siempre llegan hasta hoy. Di siempre la fecha de corte (la última fecha con datos) y entiende "este mes", "el mes pasado" o "este año" respecto a esa fecha de corte; aclara qué periodo usaste.
 - No tienes acceso a archivos, a la terminal ni a internet. Si piden algo que tus herramientas no permiten, dilo.
+- Si preguntan por un tablero, reporte, agente o skill que no está entre los tuyos, di claramente que no lo tienes disponible para su usuario y que el equipo de Exek puede habilitarlo. No describas su contenido ni lo reemplaces por otro componente sin aclararlo; si te sirve, ofrece lo que sí puedes calcular.
 - Sé claro y breve: primero la respuesta con las cifras clave, luego el detalle.
 
 Instrucciones de {nombre}:
@@ -76,11 +77,17 @@ def _sin_prefijo(nombre: str) -> str:
 class SesionEco:
     """Conversación de un usuario con ECO. Úsala con `async with`."""
 
-    def __init__(self, cliente: Cliente, paquete: Paquete, usuario: str):
+    def __init__(self, cliente: Cliente, paquete: Paquete, usuario: str, *, modo: str = "prueba",
+                 rol: str | None = None, credenciales=None, cuenta_datos: str | None = None):
+        """modo "produccion": paquete publicado y filtrado por el rol del usuario (eco.acceso).
+        modo "prueba": el almacén del repositorio completo, para los autores de Exek."""
         self.cliente = cliente
         self.paquete = paquete
         self.usuario = usuario
-        self.consultas = ConsultasBigQuery(cliente, paquete)
+        self.modo = modo
+        self.rol = rol
+        self.cuenta_datos = cuenta_datos
+        self.consultas = ConsultasBigQuery(cliente, paquete, credenciales)
         self.sesion_id: str | None = None
         self.carga: dict = {}
         self._config_claude = tempfile.mkdtemp(prefix="eco-claude-")
@@ -201,6 +208,9 @@ class SesionEco:
             "disparador": "eco",
             "cliente": self.cliente.cliente_id,
             "usuario": self.usuario,
+            "modo": self.modo,
+            "rol": self.rol,
+            "cuenta_datos": self.cuenta_datos,
             "sesion_id": self.sesion_id,
             "pregunta": pregunta,
             "modelos": sorted(modelos),

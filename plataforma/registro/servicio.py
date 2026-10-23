@@ -410,6 +410,31 @@ class Registro:
         suyas = set(rol["etiquetas"])
         return [c for c in self.publicados(cliente_id) if suyas & set(c["etiquetas"])]
 
+    def acceso_eco(self, correo: str) -> dict:
+        """Lo que ECO necesita para atender a un usuario: su cliente, su rol, los componentes
+        que puede usar y todos los publicados (para las dependencias), cada uno con el commit
+        de su versión en producción. Si no puede usar ECO, el error explica por qué."""
+        u = self.usuario(correo)
+        if u is None:
+            raise ErrorRegistro("Tu usuario no está registrado para usar ECO. Pide acceso al equipo de Exek.")
+        if u["estado"] != "activo":
+            raise ErrorRegistro("Tu usuario está inactivo. Pide al equipo de Exek que lo active.")
+        cliente = self.cliente(u["cliente_id"])
+        if cliente["estado"] != "activo":
+            raise ErrorRegistro(f"{cliente['nombre']} está inactivo en la plataforma.")
+        rol = self.almacen.obtener("roles", cliente_id=cliente["cliente_id"], rol_id=u["rol_id"])
+        suyas = set(rol["etiquetas"]) if rol else set()
+        publicados = []
+        for c in self.almacen_completo(cliente["cliente_id"]):
+            if c["estado"] != "activo" or not c["version_produccion"]:
+                continue
+            v = next((v for v in c["versiones"] if v["numero"] == c["version_produccion"]), None)
+            if v is not None:
+                publicados.append({**{k: c[k] for k in ("componente_id", "tipo", "nombre", "etiquetas", "version_produccion")},
+                                   "commit": v["commit"]})
+        elegidos = [c for c in publicados if suyas & set(c["etiquetas"])]
+        return {"usuario": u, "cliente": cliente, "rol": rol, "elegidos": elegidos, "publicados": publicados}
+
     def permitidos_para_usuario(self, correo: str) -> tuple[dict | None, list[dict]]:
         """(usuario, componentes que puede usar). Sin usuario activo, no hay componentes."""
         u = self.usuario(correo)

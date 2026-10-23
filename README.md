@@ -97,6 +97,7 @@ Desde la carpeta `plataforma/`:
 python -m eco "¿Cuántos clientes perdidos tenemos?"                # una pregunta
 python -m eco --detalle "¿Cómo nos fue en ventas el mes pasado?"   # con skills, consultas, tokens y costo
 python -m eco                                                      # conversación; escribe "salir" para terminar
+python -m eco --modo produccion --usuario comercial.demo@exek.co "..."   # como lo ve un usuario registrado: lo publicado para su rol
 python -m eco.pruebas                                              # corre pruebas/casos.yaml y compara cifras con BigQuery
 ```
 

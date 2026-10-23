@@ -4,6 +4,8 @@ Uso (desde la carpeta plataforma/):
     python -m eco "¿Cuántos clientes perdidos tenemos?"
     python -m eco                      conversación: escribe preguntas hasta "salir"
     python -m eco --detalle "..."      muestra además skills, consultas, tokens y costo
+    python -m eco --modo produccion --usuario comercial.demo@exek.co "..."
+                                       como lo vería ese usuario: versiones publicadas y solo lo de su rol
 """
 from __future__ import annotations
 
@@ -37,10 +39,24 @@ def mostrar(r: Respuesta, detalle: bool) -> None:
 
 
 async def principal(args) -> int:
-    cliente = cargar_cliente(args.cliente)
-    paquete = armar(cliente)
     usuario = args.usuario or os.environ.get("ECO_USUARIO") or getpass.getuser()
-    async with SesionEco(cliente, paquete, usuario) as sesion:
+    if args.modo == "produccion":
+        from eco.acceso import AccesoRegistro, SinAcceso
+
+        try:
+            at = AccesoRegistro().atender(usuario)
+        except SinAcceso as e:
+            print(e)
+            return 1
+        cliente = at.cliente
+        print(f"Modo producción · {at.usuario} · rol {at.rol} · "
+              + ", ".join(f"{c['id']} v{c['version']}" for c in at.paquete.componentes))
+        sesion_eco = SesionEco(at.cliente, at.paquete, at.usuario, modo="produccion", rol=at.rol,
+                               credenciales=at.credenciales, cuenta_datos=at.cuenta_datos)
+    else:
+        cliente = cargar_cliente(args.cliente)
+        sesion_eco = SesionEco(cliente, armar(cliente), usuario)
+    async with sesion_eco as sesion:
         if args.pregunta:
             r = await sesion.preguntar(" ".join(args.pregunta))
             mostrar(r, args.detalle)
@@ -65,7 +81,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog="python -m eco", description="ECO de prueba desde la terminal.")
     ap.add_argument("pregunta", nargs="*")
     ap.add_argument("--cliente", default="districash")
-    ap.add_argument("--usuario", help="Quién pregunta (queda en el registro)")
+    ap.add_argument("--usuario", help="Quién pregunta (queda en el registro; en producción, su correo registrado)")
+    ap.add_argument("--modo", choices=["prueba", "produccion"], default="prueba",
+                    help="prueba: almacén del repositorio completo (por defecto); produccion: lo publicado para el rol del usuario")
     ap.add_argument("--detalle", action="store_true", help="Muestra componentes, consultas, tokens y costo")
     return asyncio.run(principal(ap.parse_args()))
 

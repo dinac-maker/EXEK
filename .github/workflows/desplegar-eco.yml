@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # las pruebas leen el historial de versiones en Git
 
       - uses: actions/setup-python@v5
         with:
@@ -33,6 +35,11 @@ jobs:
         run: |
           pip install -r herramientas/requirements.txt
           python herramientas/validar.py "clientes/${{ inputs.cliente }}"
+
+      - name: Probar el registro y el modo producción de ECO
+        run: |
+          pip install -r plataforma/eco/requirements.txt -r plataforma/requirements-pruebas.txt
+          cd plataforma && python -m pytest registro eco/test_acceso.py -q
 
       - name: Conectar con GCP
         uses: google-github-actions/auth@v2

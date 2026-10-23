@@ -206,6 +206,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Pantallas del almacén y de componente más rápidas: de 8-11 s a 2-3 s contra el registro real (consultas en paralelo, versiones del cliente en una sola consulta y búsqueda de versiones nuevas en segundo plano). |
 | 23/10/2026 | **Un solo ECO para todos los clientes**: servicio `eco` en Cloud Run, que reemplaza a `eco-districash`. En modo producción el cliente sale del registro según el correo del usuario; cada cliente sigue con su paquete publicado y su propia cuenta de datos (`eco-<cliente>`). El modo prueba usa Districash por defecto. La acción de despliegue ya no pide cliente y valida todos los almacenes. |
 | 23/10/2026 | Consola Exek: **búsqueda en todos los almacenes**, dentro de la pestaña Almacén (selector "Buscar en": el cliente elegido o todos los clientes, conservando el texto buscado). El encabezado dice "I-NA · almacén de componentes". Busca por nombre, identificador, tipo, etiqueta o nota de versión y muestra qué cliente tiene cada componente, con su versión en producción o en prueba; se filtra por tipo, cliente y estado. |
+| 23/10/2026 | Fase 3: **ECO único desplegado** en Cloud Run (servicio `eco`) conectado al registro, y consola actualizada (revisión `consola-exek-00002-7qb`). Probado en Cloud Run: Comercial recibe sus 3 componentes y 1.561 clientes perdidos; Gerencia recibe la venta neta de marzo de 2026 ($27.449.812.336); un correo no registrado es rechazado; sin credenciales responde 403. BigQuery confirma que las consultas las hizo `eco-districash@exekai.iam.gserviceaccount.com`. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -531,5 +532,5 @@ Rama `fase3/consola-exek`.
 | Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo y probado en `main` (paquete del commit `60d256f` guardado por GitHub el 23/10/2026) |
 | Pantallas de la consola | `plataforma/consola/` | Listas y probadas en el navegador en modo demostración. Falta conectarlas al registro real al desplegar |
 | Publicar, volver atrás y retirar en pantalla | `plataforma/consola/` | Listo y probado en modo demostración |
-| ECO lee el registro (paquete publicado y filtro por rol) | `plataforma/eco/acceso.py`, `registro/paquetes.py` | Listo y probado desde el computador del autor; falta desplegarlo en Cloud Run (servicio `eco`) |
+| ECO lee el registro (paquete publicado y filtro por rol) | `plataforma/eco/acceso.py`, `registro/paquetes.py` | Desplegado (servicio `eco`) y probado en Cloud Run el 23/10/2026 |
 | Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | Desplegada el 23/10/2026: https://consola-exek-l7kl6xx5kq-uc.a.run.app (solo grupo `consola@exek.co`) |

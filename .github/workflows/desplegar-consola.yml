@@ -1,0 +1,63 @@
+name: Desplegar Consola Exek
+
+# Se corre a mano desde la pestaña Actions. Requiere docs/gcp-preparacion-fase3.md.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # para Workload Identity Federation con GCP
+
+env:
+  PROYECTO: exekai
+  NUMERO_PROYECTO: "747756330167"
+  REGION: us-central1
+  REPOSITORIO: eco
+  SERVICIO: consola-exek
+  CUENTA_CONSOLA: consola-exek@exekai.iam.gserviceaccount.com
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # las pruebas leen el historial de versiones en Git
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Probar el registro antes de desplegar
+        run: |
+          pip install -r plataforma/consola/requirements.txt -r plataforma/requirements-pruebas.txt
+          cd plataforma && python -m pytest registro -q
+
+      - name: Conectar con GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Construir y subir la imagen
+        id: imagen
+        run: |
+          IMAGEN="$REGION-docker.pkg.dev/$PROYECTO/$REPOSITORIO/consola:${GITHUB_SHA::7}"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -f plataforma/consola/Dockerfile -t "$IMAGEN" .
+          docker push "$IMAGEN"
+          echo "imagen=$IMAGEN" >> "$GITHUB_OUTPUT"
+
+      - name: Desplegar en Cloud Run con IAP
+        run: |
+          gcloud run deploy "$SERVICIO" \
+            --project "$PROYECTO" --region "$REGION" \
+            --image "${{ steps.imagen.outputs.imagen }}" \
+            --service-account "$CUENTA_CONSOLA" \
+            --no-allow-unauthenticated --iap \
+            --cpu 1 --memory 1Gi --timeout 300 --max-instances 2 \
+            --set-env-vars "CONSOLA_IAP_AUDIENCIA=/projects/$NUMERO_PROYECTO/locations/$REGION/services/$SERVICIO,CONSOLA_PROYECTO=$PROYECTO,CONSOLA_DATASET=exek_registro,CONSOLA_BUCKET=exekai-paquetes" \
+            --labels "componente=consola-exek"
+          gcloud run services describe "$SERVICIO" --project "$PROYECTO" --region "$REGION" --format 'value(status.url)'

@@ -197,6 +197,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Fase 3 · Pantallas de la consola construidas en `plataforma/consola/` (Python con FastAPI y páginas armadas en el servidor): almacén con versiones (publicar, volver atrás, retirar, etiquetas y visibilidad), clientes con alta guiada, etiquetas y roles, usuarios e historial, todas con filtros. Encabezado con el logo de Exek. Modo demostración (`python plataforma/consola/demo.py`) con el registro en memoria y sin crear solicitudes en GitHub. |
 | 23/10/2026 | Fase 3: el alta guiada de un cliente tiene **cinco** comandos: crear la cuenta de ECO, permiso de consultas, lectura del dataset, permiso para que ECO actúe como la cuenta y permiso para que **la consola** actúe como ella. Este último permite que "Verificar acceso" pruebe de verdad la lectura del dataset (sin traer datos). |
 | 23/10/2026 | El identificador de un cliente tiene máximo 26 caracteres, porque la cuenta `eco-<cliente>` no puede pasar de 30 en GCP. |
+| 23/10/2026 | Fase 3: la consola se despliega a mano con la acción "Desplegar Consola Exek" de GitHub (servicio `consola-exek` en Cloud Run, `us-central1`, cuenta `consola-exek`, imagen en el repositorio `eco` de Artifact Registry). IAP se activa directamente sobre el servicio de Cloud Run (`--iap`), sin balanceador; la consola verifica el token firmado de IAP en cada petición. Antes de desplegar, la acción corre las pruebas del registro. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -523,4 +524,4 @@ Rama `fase3/consola-exek`.
 | Pantallas de la consola | `plataforma/consola/` | Listas y probadas en el navegador en modo demostración. Falta conectarlas al registro real al desplegar |
 | Publicar, volver atrás y retirar en pantalla | `plataforma/consola/` | Listo y probado en modo demostración |
 | ECO lee el registro (paquete publicado y filtro por rol) | — | Pendiente |
-| Despliegue con IAP | — | Pendiente |
+| Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | Listo para correr; la acción solo aparece en *Actions* cuando está en `main` |

@@ -133,3 +133,7 @@ python plataforma/consola/demo.py
 ```
 
 Abre http://localhost:8081. En modo demostración el registro vive en memoria (con Districash cargado), no se escribe en BigQuery y no se crean solicitudes de cambio en GitHub. Para usar el registro real, desde `plataforma/`: `uvicorn consola.app:app --port 8081`.
+
+### Desplegar la consola
+
+En GitHub, pestaña *Actions* → **Desplegar Consola Exek** → **Run workflow**. La acción corre las pruebas del registro, construye la imagen y despliega `consola-exek` en Cloud Run detrás de IAP. Solo entran los miembros del grupo `consola@exek.co`, con su cuenta de Google de Exek.

@@ -288,11 +288,9 @@ class Registro:
             raise ErrorRegistro(f"No existe el componente '{componente_id}'.")
         return c
 
-    def versiones(self, cliente_id: str, componente_id: str) -> list[dict]:
-        """Versiones de un componente, de la más nueva a la más vieja, con su estado."""
-        comp = self.componente(cliente_id, componente_id)
-        vs = self.almacen.listar("versiones", cliente_id=cliente_id, componente_id=componente_id)
-        vs.sort(key=lambda v: tupla_version(v["numero"]), reverse=True)
+    @staticmethod
+    def _con_estados(comp: dict, vs: list[dict]) -> list[dict]:
+        vs = sorted(vs, key=lambda v: tupla_version(v["numero"]), reverse=True)
         prod = comp["version_produccion"] if comp["estado"] == "activo" else None
         for v in vs:
             if prod and v["numero"] == prod:
@@ -303,12 +301,28 @@ class Registro:
                 v["estado"] = "anterior"
         return vs
 
+    def versiones(self, cliente_id: str, componente_id: str) -> list[dict]:
+        """Versiones de un componente, de la más nueva a la más vieja, con su estado."""
+        comp = self.componente(cliente_id, componente_id)
+        return self._con_estados(comp, self.almacen.listar("versiones", cliente_id=cliente_id, componente_id=componente_id))
+
     def version_en_prueba(self, cliente_id: str, componente_id: str) -> str | None:
         """La versión más nueva que todavía no está publicada, si la hay."""
         for v in self.versiones(cliente_id, componente_id):
             if v["estado"] == "en_prueba":
                 return v["numero"]
         return None
+
+    def almacen_completo(self, cliente_id: str) -> list[dict]:
+        """Componentes del cliente con sus versiones y su versión en prueba, en dos consultas
+        (en BigQuery cada consulta tarda alrededor de un segundo)."""
+        todas = self.almacen.listar("versiones", cliente_id=cliente_id)
+        salida = []
+        for c in self.componentes(cliente_id):
+            vs = self._con_estados(c, [v for v in todas if v["componente_id"] == c["componente_id"]])
+            salida.append({**c, "versiones": vs,
+                           "en_prueba": next((v["numero"] for v in vs if v["estado"] == "en_prueba"), None)})
+        return salida
 
     def registrar_version(self, cliente_id: str, componente_id: str, tipo: str, nombre: str, numero: str,
                           commit: str, notas: str | None = None, autor: str | None = None,

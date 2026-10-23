@@ -51,6 +51,7 @@ class PaquetesGCS(Paquetes):
         self.bucket_nombre = bucket
         self.gcs = cliente_gcs or storage.Client()
         self.bucket = self.gcs.bucket(bucket)
+        self._leidos: dict[str, dict] = {}  # los manifiestos no cambian: se descargan una sola vez
 
     def uri(self, cliente_id, commit):
         return f"gs://{self.bucket_nombre}/{cliente_id}/commits/{commit}.zip"
@@ -59,9 +60,11 @@ class PaquetesGCS(Paquetes):
         salida = []
         for blob in self.gcs.list_blobs(self.bucket_nombre, prefix=f"{cliente_id}/commits/"):
             if blob.name.endswith(".json"):
-                m = json.loads(blob.download_as_text(encoding="utf-8"))
-                m.setdefault("commit", Path(blob.name).stem)
-                salida.append(m)
+                if blob.name not in self._leidos:
+                    m = json.loads(blob.download_as_text(encoding="utf-8"))
+                    m.setdefault("commit", Path(blob.name).stem)
+                    self._leidos[blob.name] = m
+                salida.append(self._leidos[blob.name])
         return _ordenar(salida)
 
     def existe(self, cliente_id, commit):

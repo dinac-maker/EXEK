@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import time
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -61,12 +62,16 @@ def _ir(url: str, ok: str | None = None, error: str | None = None) -> RedirectRe
     return RedirectResponse(url + ("?" + urllib.parse.urlencode(q) if q else ""), status_code=303)
 
 
-def _pagina(request: Request, plantilla: str, quien: str, cliente_id: str | None = None, **datos):
-    clientes = registro.clientes()
+def _pagina(request: Request, plantilla: str, quien: str, cliente_id: str | None = None, clientes=None, **datos):
+    clientes = registro.clientes() if clientes is None else clientes
     actual = next((c for c in clientes if c["cliente_id"] == cliente_id), None) if cliente_id else None
     return plantillas.TemplateResponse(request, plantilla, {
         "quien": quien, "clientes": clientes, "cliente": actual, "ok": request.query_params.get("ok"),
         "error": request.query_params.get("error"), "TIPOS": TIPOS, "ESTADOS_VERSION": ESTADOS_VERSION, **datos})
+
+
+_en_segundo_plano = ThreadPoolExecutor(max_workers=2)
+_avisos: dict[str, str] = {}  # resultado de la última sincronización en segundo plano, por cliente
 
 
 def _sincronizar(cliente_id: str, forzar: bool = False) -> list:
@@ -74,6 +79,23 @@ def _sincronizar(cliente_id: str, forzar: bool = False) -> list:
         return []
     _ultima_sincronizacion[cliente_id] = time.monotonic()
     return sincronizar(registro, paquetes, cliente_id)
+
+
+def _sincronizar_en_segundo_plano(cliente_id: str) -> None:
+    """Busca versiones nuevas sin hacer esperar a la persona; las verá al recargar."""
+    if time.monotonic() - _ultima_sincronizacion.get(cliente_id, -1e9) < SINCRONIZAR_CADA:
+        return
+
+    def tarea():
+        try:
+            nuevas = _sincronizar(cliente_id)
+            if nuevas:
+                _avisos[cliente_id] = "Versiones nuevas en prueba: " + ", ".join(f"{c} {n}" for c, n in nuevas)
+        except Exception as e:  # noqa: BLE001
+            _avisos[cliente_id] = f"No se pudieron leer los paquetes nuevos: {e}"
+
+    _ultima_sincronizacion[cliente_id] = time.monotonic() - SINCRONIZAR_CADA - 1  # que la tarea sí corra
+    _en_segundo_plano.submit(tarea)
 
 
 def _lista(valor: str | None) -> list[str]:
@@ -97,23 +119,18 @@ def inicio(quien: str = Depends(usuario_actual)):
 
 @app.get("/c/{cid}/almacen", response_class=HTMLResponse)
 def almacen(request: Request, cid: str, quien: str = Depends(usuario_actual)):
-    try:
-        registro.cliente(cid)
-    except ErrorRegistro as e:
-        return _ir("/clientes", error=str(e))
-    aviso = None
-    try:
-        nuevas = _sincronizar(cid)
-        if nuevas:
-            aviso = "Versiones nuevas en prueba: " + ", ".join(f"{c} {n}" for c, n in nuevas)
-    except Exception as e:  # noqa: BLE001 - la página se muestra igual
-        aviso = f"No se pudieron leer los paquetes nuevos: {e}"
-    etiquetas = {e["etiqueta_id"]: e["nombre"] for e in registro.etiquetas(cid)}
-    filas = []
-    for c in registro.componentes(cid):
-        filas.append({**c, "en_prueba": registro.version_en_prueba(cid, c["componente_id"]),
-                      "etiquetas_nombres": [etiquetas.get(e, e) for e in c["etiquetas"]]})
-    return _pagina(request, "almacen.html", quien, cid, seccion="almacen", componentes=filas,
+    # Las consultas que no dependen entre sí van en paralelo: en BigQuery cada una tarda ~1 s.
+    _sincronizar_en_segundo_plano(cid)
+    aviso = _avisos.pop(cid, None)
+    with ThreadPoolExecutor(max_workers=3) as hilos:
+        f_clientes = hilos.submit(registro.clientes)
+        f_etiquetas = hilos.submit(registro.etiquetas, cid)
+        componentes = registro.almacen_completo(cid)
+        clientes, etiquetas = f_clientes.result(), {e["etiqueta_id"]: e["nombre"] for e in f_etiquetas.result()}
+    if not any(c["cliente_id"] == cid for c in clientes):
+        return _ir("/clientes", error=f"No existe el cliente '{cid}'.")
+    filas = [{**c, "etiquetas_nombres": [etiquetas.get(e, e) for e in c["etiquetas"]]} for c in componentes]
+    return _pagina(request, "almacen.html", quien, cid, clientes=clientes, seccion="almacen", componentes=filas,
                    etiquetas=etiquetas, aviso=aviso)
 
 
@@ -128,13 +145,16 @@ def forzar_sincronizacion(cid: str, quien: str = Depends(usuario_actual)):
 
 @app.get("/c/{cid}/componentes/{comp}", response_class=HTMLResponse)
 def componente(request: Request, cid: str, comp: str, quien: str = Depends(usuario_actual)):
-    try:
-        c = registro.componente(cid, comp)
-        versiones = registro.versiones(cid, comp)
-    except ErrorRegistro as e:
-        return _ir(f"/c/{cid}/almacen", error=str(e))
-    return _pagina(request, "componente.html", quien, cid, seccion="almacen", comp=c, versiones=versiones,
-                   etiquetas=registro.etiquetas(cid))
+    with ThreadPoolExecutor(max_workers=4) as hilos:
+        f_clientes = hilos.submit(registro.clientes)
+        f_etiquetas = hilos.submit(registro.etiquetas, cid)
+        f_versiones = hilos.submit(registro.almacen.listar, "versiones", cliente_id=cid, componente_id=comp)
+        c = registro.almacen.obtener("componentes", cliente_id=cid, componente_id=comp)
+        clientes, etiquetas, versiones = f_clientes.result(), f_etiquetas.result(), f_versiones.result()
+    if c is None:
+        return _ir(f"/c/{cid}/almacen", error=f"No existe el componente '{comp}'.")
+    return _pagina(request, "componente.html", quien, cid, clientes=clientes, seccion="almacen", comp=c,
+                   versiones=Registro._con_estados(c, versiones), etiquetas=etiquetas)
 
 
 @app.post("/c/{cid}/componentes/{comp}/publicar")

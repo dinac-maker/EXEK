@@ -191,3 +191,13 @@ def test_la_carga_inicial_se_puede_repetir(districash):
     antes = len(districash.historial("districash"))
     cargar(districash)
     assert len(districash.historial("districash")) == antes
+
+
+def test_almacen_completo_coincide_con_las_consultas_por_componente(districash):
+    districash.registrar_version("districash", "deteccion-clientes-perdidos", "skill",
+                                 "Detección de clientes perdidos", "0.3.0", "abc1234")
+    completo = {c["componente_id"]: c for c in districash.almacen_completo("districash")}
+    for cid, c in completo.items():
+        assert c["en_prueba"] == districash.version_en_prueba("districash", cid)
+        assert [v["estado"] for v in c["versiones"]] == [v["estado"] for v in districash.versiones("districash", cid)]
+    assert completo["deteccion-clientes-perdidos"]["en_prueba"] == "0.3.0"

@@ -99,7 +99,7 @@ gcloud iam service-accounts add-iam-policy-binding "$ECO_SA" --project "$EXEKAI_
 Para poder llamar al servicio (no es público), cada persona que lo pruebe necesita el rol **Invocador de Cloud Run**:
 
 ```bash
-gcloud run services add-iam-policy-binding eco-districash --region us-central1 --project "$EXEKAI_ID"   --member "user:CORREO_DE_LA_PERSONA" --role roles/run.invoker
+gcloud run services add-iam-policy-binding eco --region us-central1 --project "$EXEKAI_ID"   --member "user:CORREO_DE_LA_PERSONA" --role roles/run.invoker
 ```
 
 ## 6. Avisar al equipo

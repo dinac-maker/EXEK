@@ -23,9 +23,9 @@
 {% set destino = seccion if seccion in ["almacen", "roles", "usuarios", "historial"] else "almacen" %}
 <header class="hd">
   <img src="/estaticos/logo-exek.png" alt="exek">
-  <div class="titulo"><b>Consola Exek</b><span>I-NA · administración de almacenes</span></div>
+  <div class="titulo"><b>Consola Exek</b><span>I-NA · almacén de componentes</span></div>
   <form action="/buscar" method="get" class="buscador">
-    <input type="search" name="q" placeholder="Buscar en todos los almacenes" aria-label="Buscar en todos los almacenes" value="{{ q if seccion == 'buscar' else '' }}">
+    <input type="search" name="q" placeholder="Buscar en el almacén de componentes" aria-label="Buscar en el almacén de componentes" value="{{ q if seccion == 'buscar' else '' }}">
   </form>
   <div class="esp"></div>
   {% if clientes %}

@@ -39,7 +39,7 @@ details summary{cursor:pointer;color:var(--azul)}
 .muted[hidden]{display:none}
 header.hd{flex-wrap:wrap;row-gap:8px}
 .titulo{white-space:nowrap}
-form.buscador{flex:1;min-width:180px;max-width:340px}
+form.buscador{flex:0 1 300px;min-width:200px}
 form.buscador input{width:100%;background:var(--fondo)}
 main{min-width:0;overflow-x:auto}
 @media (max-width:900px){.titulo span{display:none}.cuerpo{grid-template-columns:150px minmax(0,1fr)}main{padding:16px}}

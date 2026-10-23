@@ -91,13 +91,24 @@ jobs:
         env:
           PAQUETES: ${{ vars.PAQUETES_BUCKET || 'exekai-paquetes' }}
         run: |
+          # GitHub solo puede crear archivos en el bucket (no leerlos ni reemplazarlos).
+          # --if-generation-match=0 crea el archivo solo si no existe, sin necesidad de leer;
+          # si ya existe (por ejemplo, al repetir la acción), Cloud Storage responde 412 y se omite.
+          subir() {
+            if salida=$(gcloud storage cp --if-generation-match=0 "$1" "$2" 2>&1); then
+              echo "Guardado: $2"
+            elif echo "$salida" | grep -qE "412|[Pp]recondition"; then
+              echo "Ya existía: $2"
+            else
+              echo "$salida"; return 1
+            fi
+          }
           SHA=$(git rev-parse --short HEAD)
           for c in ${{ steps.clientes.outputs.lista }}; do
             id=$(basename "$c")
-            gcloud storage cp --no-clobber "dist/$id.zip" "gs://$PAQUETES/$id/commits/$SHA.zip"
+            subir "dist/$id.zip" "gs://$PAQUETES/$id/commits/$SHA.zip"
             # El manifiesto va al final: indica que el paquete de ese commit está completo.
-            gcloud storage cp --no-clobber "dist/$id/exek/manifiesto.json" "gs://$PAQUETES/$id/commits/$SHA.json"
-            echo "Paquete de $id guardado: gs://$PAQUETES/$id/commits/$SHA.zip"
+            subir "dist/$id/exek/manifiesto.json" "gs://$PAQUETES/$id/commits/$SHA.json"
           done
 
       - name: Guardar paquetes

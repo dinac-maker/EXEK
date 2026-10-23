@@ -198,6 +198,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Fase 3: el alta guiada de un cliente tiene **cinco** comandos: crear la cuenta de ECO, permiso de consultas, lectura del dataset, permiso para que ECO actúe como la cuenta y permiso para que **la consola** actúe como ella. Este último permite que "Verificar acceso" pruebe de verdad la lectura del dataset (sin traer datos). |
 | 23/10/2026 | El identificador de un cliente tiene máximo 26 caracteres, porque la cuenta `eco-<cliente>` no puede pasar de 30 en GCP. |
 | 23/10/2026 | Fase 3: la consola se despliega a mano con la acción "Desplegar Consola Exek" de GitHub (servicio `consola-exek` en Cloud Run, `us-central1`, cuenta `consola-exek`, imagen en el repositorio `eco` de Artifact Registry). IAP se activa directamente sobre el servicio de Cloud Run (`--iap`), sin balanceador; la consola verifica el token firmado de IAP en cada petición. Antes de desplegar, la acción corre las pruebas del registro. |
+| 23/10/2026 | La subida de paquetes desde GitHub usa `--if-generation-match=0` (crear solo si no existe) en lugar de `--no-clobber`, que necesitaba permiso de lectura. GitHub sigue con permiso solo de crear archivos en el bucket. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---

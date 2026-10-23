@@ -92,23 +92,25 @@ jobs:
           PAQUETES: ${{ vars.PAQUETES_BUCKET || 'exekai-paquetes' }}
         run: |
           # GitHub solo puede crear archivos en el bucket (no leerlos ni reemplazarlos).
-          # --if-generation-match=0 crea el archivo solo si no existe, sin necesidad de leer;
-          # si ya existe (por ejemplo, al repetir la acción), Cloud Storage responde 412 y se omite.
-          subir() {
-            if salida=$(gcloud storage cp --if-generation-match=0 "$1" "$2" 2>&1); then
-              echo "Guardado: $2"
-            elif echo "$salida" | grep -qE "412|[Pp]recondition"; then
-              echo "Ya existía: $2"
-            else
-              echo "$salida"; return 1
-            fi
+          # "gcloud storage cp" consulta el destino antes de subir, y eso exige permiso de
+          # lectura; por eso se sube directo con la API de Cloud Storage. ifGenerationMatch=0
+          # crea el archivo solo si no existe; si ya estaba (al repetir la acción), responde 412.
+          TOKEN=$(gcloud auth print-access-token)
+          subir() {  # subir <archivo local> <objeto en el bucket> <tipo de contenido>
+            nombre=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$2")
+            codigo=$(curl -sS -o respuesta.txt -w '%{http_code}' -X POST               -H "Authorization: Bearer $TOKEN" -H "Content-Type: $3" --data-binary "@$1"               "https://storage.googleapis.com/upload/storage/v1/b/$PAQUETES/o?uploadType=media&ifGenerationMatch=0&name=$nombre")
+            case "$codigo" in
+              200) echo "Guardado: gs://$PAQUETES/$2" ;;
+              412) echo "Ya existía: gs://$PAQUETES/$2" ;;
+              *) echo "Error $codigo al guardar gs://$PAQUETES/$2:"; cat respuesta.txt; return 1 ;;
+            esac
           }
           SHA=$(git rev-parse --short HEAD)
           for c in ${{ steps.clientes.outputs.lista }}; do
             id=$(basename "$c")
-            subir "dist/$id.zip" "gs://$PAQUETES/$id/commits/$SHA.zip"
+            subir "dist/$id.zip" "$id/commits/$SHA.zip" application/zip
             # El manifiesto va al final: indica que el paquete de ese commit está completo.
-            subir "dist/$id/exek/manifiesto.json" "gs://$PAQUETES/$id/commits/$SHA.json"
+            subir "dist/$id/exek/manifiesto.json" "$id/commits/$SHA.json" application/json
           done
 
       - name: Guardar paquetes

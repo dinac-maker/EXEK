@@ -1,0 +1,57 @@
+{% macro barra(tabla, texto, listas=[]) -%}
+<div class="filtros" data-tabla="{{ tabla }}">
+  <span class="muted">Filtrar</span>
+  <input type="search" name="q" placeholder="{{ texto }}">
+  {% for col, etiqueta, opciones in listas %}
+  <select name="{{ col }}" data-col="{{ col }}"><option value="">{{ etiqueta }}: todos</option>
+    {% for o in opciones %}<option>{{ o }}</option>{% endfor %}</select>
+  {% endfor %}
+  <button type="button" class="limpiar chico">Limpiar</button>
+  <span class="contador muted"></span>
+</div>
+{%- endmacro %}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Consola Exek{% endblock %} · Consola Exek</title>
+<link rel="icon" href="/estaticos/logo-exek.png">
+<link rel="stylesheet" href="/estaticos/estilos.css">
+</head>
+<body>
+{% set cid = cliente.cliente_id if cliente else (clientes[0].cliente_id if clientes else None) %}
+{% set destino = seccion if seccion in ["almacen", "roles", "usuarios", "historial"] else "almacen" %}
+<header class="hd">
+  <img src="/estaticos/logo-exek.png" alt="exek">
+  <div class="titulo"><b>Consola Exek</b><span>I-NA · administración de almacenes</span></div>
+  <div class="esp"></div>
+  {% if clientes %}
+  <label class="muted" for="selector-cliente">Cliente</label>
+  <select id="selector-cliente" data-destino="{{ destino }}" onchange="if (this.value) location.href = '/c/' + this.value + '/' + this.dataset.destino">
+    {% if not cliente %}<option value="">Elige un cliente</option>{% endif %}
+    {% for c in clientes %}<option value="{{ c.cliente_id }}" {% if cliente and c.cliente_id == cliente.cliente_id %}selected{% endif %}>{{ c.nombre }}{% if c.estado != "activo" %} (inactivo){% endif %}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <span class="chip">exekai</span>
+  <div class="avatar" title="{{ quien }}">{{ quien|iniciales }}</div>
+  <span class="muted">{{ quien }}</span>
+</header>
+<div class="cuerpo">
+<nav class="menu">
+  {% if cid %}<a href="/c/{{ cid }}/almacen" class="{{ 'on' if seccion == 'almacen' }}">Almacén</a>{% endif %}
+  <a href="/clientes{% if cid %}?c={{ cid }}{% endif %}" class="{{ 'on' if seccion == 'clientes' }}">Clientes</a>
+  {% if cid %}
+  <a href="/c/{{ cid }}/roles" class="{{ 'on' if seccion == 'roles' }}">Etiquetas y roles</a>
+  <a href="/c/{{ cid }}/usuarios" class="{{ 'on' if seccion == 'usuarios' }}">Usuarios</a>
+  <a href="/c/{{ cid }}/historial" class="{{ 'on' if seccion == 'historial' }}">Historial</a>
+  {% endif %}
+</nav>
+<main>
+  {% if ok %}<div class="aviso ok">{{ ok }}</div>{% endif %}
+  {% if error %}<div class="aviso error">{{ error }}</div>{% endif %}
+  {% block contenido %}{% endblock %}
+</main>
+</div>
+<script src="/estaticos/filtros.js"></script>
+</body>
+</html>

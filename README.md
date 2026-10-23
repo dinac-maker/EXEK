@@ -23,6 +23,7 @@ EXEK/
 ├── herramientas/             Validador, empaquetador y creador de componentes
 ├── plataforma/eco/           ECO de prueba: motor, consulta segura de BigQuery, registro y pruebas
 ├── plataforma/registro/      Registro de la Consola Exek en BigQuery (clientes, roles, etiquetas, versiones)
+├── plataforma/consola/       Consola Exek: pantallas web para administrar clientes y almacenes
 └── .github/workflows/        Validación automática en cada cambio
 ```
 
@@ -123,3 +124,12 @@ python -m pytest registro                       # pruebas en memoria (segundos);
 ```
 
 Para correr las mismas pruebas contra BigQuery (tardan unos 45 minutos), define `REGISTRO_PRUEBAS_DATASET=exek_registro_pruebas`.
+
+### Probar la consola en tu computador
+
+```bash
+pip install -r plataforma/consola/requirements.txt
+python plataforma/consola/demo.py
+```
+
+Abre http://localhost:8081. En modo demostración el registro vive en memoria (con Districash cargado), no se escribe en BigQuery y no se crean solicitudes de cambio en GitHub. Para usar el registro real, desde `plataforma/`: `uvicorn consola.app:app --port 8081`.

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<div class="cab"><div><h1>Clientes</h1><p class="sub">{{ clientes|length }} clientes registrados</p></div></div>
+{{ barra("tabla-clientes", "Buscar por nombre, dominio o proyecto", [
+  ("acceso", "Acceso de ECO", ["Verificado", "Pendiente"]), ("estado", "Estado", ["Activo", "Inactivo"])]) }}
+<table id="tabla-clientes">
+<thead><tr><th>Cliente</th><th>Dominios</th><th>Proyecto y dataset</th><th>Cuenta de ECO</th><th>Acceso de ECO</th><th>Estado</th></tr></thead>
+<tbody>
+{% for c in clientes %}
+<tr data-acceso="{{ 'Verificado' if c.acceso_verificado else 'Pendiente' }}" data-estado="{{ c.estado|capitalize }}">
+  <td><a href="/clientes/{{ c.cliente_id }}/alta">{{ c.nombre }}</a><div class="muted">{{ c.cliente_id }}</div></td>
+  <td>{{ c.dominios|join(", ") }}</td>
+  <td class="muted">{{ c.proyecto_datos }}.{{ c.dataset }}</td>
+  <td class="muted">{{ c.cuenta_eco }}</td>
+  <td>{% if c.acceso_verificado %}<span class="estado-en_produccion">Verificado</span>{% else %}<a href="/clientes/{{ c.cliente_id }}/alta" class="estado-en_prueba">Pendiente</a>{% endif %}</td>
+  <td>{{ c.estado|capitalize }}</td>
+</tr>
+{% endfor %}
+</tbody></table>
+
+<div class="tarjeta" style="margin-top:20px">
+<h2 style="font-size:16px;margin-top:0">Nuevo cliente</h2>
+<p class="muted">Cada cliente tiene su propio proyecto de GCP con su dataset. Al crearlo, la consola lo registra, abre una solicitud de cambio con su carpeta en GitHub y te muestra los pasos para dar acceso a ECO.</p>
+<form method="post" action="/clientes">
+  <div class="form-grid">
+    <label class="campo">Nombre<input name="nombre" placeholder="Ferretería Andina" required></label>
+    <label class="campo">Dominios de correo (separados por coma)<input name="dominios" placeholder="ferreandina.co" required></label>
+    <label class="campo">Proyecto de GCP con sus datos<input name="proyecto_datos" placeholder="exek-ferreandina" required></label>
+    <label class="campo">Dataset de BigQuery<input name="dataset" placeholder="ventas" required></label>
+  </div>
+  <button class="primario">Crear cliente</button>
+</form>
+</div>
+{% endblock %}

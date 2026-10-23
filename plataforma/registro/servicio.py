@@ -93,9 +93,11 @@ class Registro:
         nombre = (nombre or "").strip()
         if len(nombre) < 2:
             raise ErrorRegistro("Escribe el nombre del cliente.")
-        cliente_id = cliente_id or identificador(nombre)
+        cliente_id = cliente_id or identificador(nombre)[:26].strip("-")
         if not PATRON_ID.match(cliente_id):
             raise ErrorRegistro("El identificador del cliente solo puede tener minúsculas, números y guiones.")
+        if len(cliente_id) > 26:  # la cuenta eco-<cliente> no puede pasar de 30 caracteres en GCP
+            raise ErrorRegistro("El identificador del cliente puede tener máximo 26 caracteres.")
         dominios = sorted({d.strip().lower() for d in dominios if d and d.strip()})
         if not dominios:
             raise ErrorRegistro("Escribe al menos un dominio de correo del cliente, por ejemplo districash.com.")

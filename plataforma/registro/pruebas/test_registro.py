@@ -81,6 +81,8 @@ def test_alta_de_cliente_valida_los_datos(reg):
         reg.crear_cliente(EXEK, "Otro", ["otro.com"], "X", "ventas")
     with pytest.raises(ErrorRegistro, match="dataset"):
         reg.crear_cliente(EXEK, "Otro", ["otro.com"], "exek-otro", "ventas-2026")
+    largo = reg.crear_cliente(EXEK, "Distribuidora Nacional de Ferreterías del Caribe", ["dnfc.co"], "exek-dnfc", "ventas")
+    assert len(largo["cuenta_eco"].split("@")[0]) <= 30  # límite de GCP para cuentas de servicio
 
 
 def test_cambiar_proyecto_obliga_a_verificar_de_nuevo(reg):

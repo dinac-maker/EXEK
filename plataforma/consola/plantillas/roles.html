@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titulo %}Etiquetas y roles{% endblock %}
+{% block contenido %}
+<div class="cab"><div><h1>Etiquetas y roles de {{ cliente.nombre }}</h1>
+<p class="sub">Un rol puede usar en ECO los componentes publicados que tengan al menos una de sus etiquetas.</p></div></div>
+
+<div class="tarjeta">
+<h2 style="font-size:16px;margin-top:0">Etiquetas</h2>
+<table>
+<thead><tr><th>Etiqueta</th><th>Identificador</th><th></th></tr></thead>
+<tbody>
+{% for e in etiquetas %}
+<tr><td><form method="post" action="/c/{{ cliente.cliente_id }}/etiquetas/{{ e.etiqueta_id }}" style="display:flex;gap:6px">
+      <input type="hidden" name="revision" value="{{ e.revision }}">
+      <input name="nombre" value="{{ e.nombre }}"><button class="chico" name="accion" value="renombrar">Renombrar</button>
+      <button class="chico peligro" name="accion" value="eliminar" onclick="return confirm('¿Eliminar la etiqueta?')">Eliminar</button></form></td>
+  <td class="muted">{{ e.etiqueta_id }}</td><td></td></tr>
+{% endfor %}
+</tbody></table>
+<form method="post" action="/c/{{ cliente.cliente_id }}/etiquetas" style="display:flex;gap:8px;margin-top:10px">
+  <input name="nombre" placeholder="Nueva etiqueta, por ejemplo Logística" required><button class="primario">Crear etiqueta</button>
+</form>
+</div>
+
+<h2 style="font-size:16px">Roles</h2>
+{{ barra("tabla-roles", "Buscar rol", [("etiqueta", "Etiqueta", etiquetas|map(attribute="nombre")|list)]) }}
+<table id="tabla-roles">
+<thead><tr><th>Rol</th><th>Etiquetas permitidas</th><th>Ve en ECO</th><th></th></tr></thead>
+<tbody>
+{% for r in roles %}
+<tr data-etiqueta="{{ r.etiquetas_nombres|join('|') }}">
+  <td><b>{{ r.nombre }}</b><div class="muted">{{ r.descripcion or "" }}</div></td>
+  <td>{% for e in r.etiquetas_nombres %}<span class="chip">{{ e }}</span>{% else %}<span class="muted">Ninguna</span>{% endfor %}</td>
+  <td class="muted">{{ r.ve }} de {{ total_publicados }} componentes publicados</td>
+  <td><details><summary>Editar</summary>
+    <form method="post" action="/c/{{ cliente.cliente_id }}/roles/{{ r.rol_id }}">
+      <input type="hidden" name="revision" value="{{ r.revision }}">
+      {% for e in etiquetas %}<label class="etq-check"><input type="checkbox" name="etiquetas" value="{{ e.etiqueta_id }}" {% if e.etiqueta_id in r.etiquetas %}checked{% endif %}> {{ e.nombre }}</label>{% endfor %}
+      <div style="margin:6px 0"><input name="descripcion" value="{{ r.descripcion or '' }}" placeholder="Descripción" style="width:100%"></div>
+      <button class="primario chico">Guardar</button>
+    </form></details></td>
+</tr>
+{% endfor %}
+</tbody></table>
+
+<div class="tarjeta" style="margin-top:20px">
+<h2 style="font-size:16px;margin-top:0">Nuevo rol</h2>
+<form method="post" action="/c/{{ cliente.cliente_id }}/roles">
+  <div class="form-grid"><label class="campo">Nombre<input name="nombre" placeholder="Logística" required></label>
+  <label class="campo">Descripción<input name="descripcion" placeholder="Equipo de despachos"></label></div>
+  {% for e in etiquetas %}<label class="etq-check"><input type="checkbox" name="etiquetas" value="{{ e.etiqueta_id }}"> {{ e.nombre }}</label>{% endfor %}
+  <p><button class="primario">Crear rol</button></p>
+</form>
+</div>
+{% endblock %}

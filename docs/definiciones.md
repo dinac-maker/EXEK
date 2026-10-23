@@ -194,6 +194,9 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Fase 3: las pruebas automáticas del registro corren en memoria y, cuando se pide, contra el dataset `exekai.exek_registro_pruebas`, cuyas tablas se borran solas a las 6 horas. En BigQuery cada operación tarda 1 a 2 segundos: suficiente para la consola, pero la suite completa contra BigQuery tarda unos 45 minutos. |
 | 23/10/2026 | Fase 3 · Versiones guardadas: cuando un cambio llega a `main`, la acción "Validar almacenes" deja el paquete de cada cliente que cambió en `gs://exekai-paquetes/<cliente>/commits/<commit>.zip`, con su manifiesto (`.json`) al final. **GitHub solo sube archivos; no escribe en el registro.** La consola lee esos manifiestos y registra las versiones nuevas como "en prueba" (`registro/sincronizar.py`). El manifiesto del paquete ahora incluye la nota de versión y el autor de cada componente. |
 | 23/10/2026 | Se guardaron en Cloud Storage los paquetes de los 4 commits con versiones anteriores de Districash (`a8f16cb`, `84db223`, `002fa7e`, `66ca0fe`), armados desde Git, para poder volver a cualquiera de ellas. |
+| 23/10/2026 | Fase 3 · Pantallas de la consola construidas en `plataforma/consola/` (Python con FastAPI y páginas armadas en el servidor): almacén con versiones (publicar, volver atrás, retirar, etiquetas y visibilidad), clientes con alta guiada, etiquetas y roles, usuarios e historial, todas con filtros. Encabezado con el logo de Exek. Modo demostración (`python plataforma/consola/demo.py`) con el registro en memoria y sin crear solicitudes en GitHub. |
+| 23/10/2026 | Fase 3: el alta guiada de un cliente tiene **cinco** comandos: crear la cuenta de ECO, permiso de consultas, lectura del dataset, permiso para que ECO actúe como la cuenta y permiso para que **la consola** actúe como ella. Este último permite que "Verificar acceso" pruebe de verdad la lectura del dataset (sin traer datos). |
+| 23/10/2026 | El identificador de un cliente tiene máximo 26 caracteres, porque la cuenta `eco-<cliente>` no puede pasar de 30 en GCP. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -517,7 +520,7 @@ Rama `fase3/consola-exek`.
 | Preparación de GCP | `docs/gcp-preparacion-fase3.md` | Hecha y verificada |
 | Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; 13 pruebas pasan en memoria y en BigQuery. Districash cargado en `exekai.exek_registro` |
 | Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo; 17 pruebas pasan. Paquetes de las versiones anteriores guardados. La subida automática se verá en acción con el primer cambio que llegue a `main` |
-| Pantallas de la consola | — | Pendiente (prototipo aprobado el 23/10/2026) |
-| Publicar, volver atrás y retirar en pantalla | — | Pendiente (las reglas ya están en el registro) |
+| Pantallas de la consola | `plataforma/consola/` | Listas y probadas en el navegador en modo demostración. Falta conectarlas al registro real al desplegar |
+| Publicar, volver atrás y retirar en pantalla | `plataforma/consola/` | Listo y probado en modo demostración |
 | ECO lee el registro (paquete publicado y filtro por rol) | — | Pendiente |
 | Despliegue con IAP | — | Pendiente |

@@ -103,11 +103,15 @@ dar_acceso "exek-produccion:NewtonAgentSpace" READER "$CLIENTE_SA"
 # ECO puede actuar como esta cuenta
 gcloud iam service-accounts add-iam-policy-binding "$CLIENTE_SA" --project "$EXEKAI_ID" \
   --member "serviceAccount:$ECO_SA" --role roles/iam.serviceAccountTokenCreator
+
+# La consola puede actuar como esta cuenta para el botón "Verificar acceso"
+gcloud iam service-accounts add-iam-policy-binding "$CLIENTE_SA" --project "$EXEKAI_ID" \
+  --member "serviceAccount:$CONSOLA_SA" --role roles/iam.serviceAccountTokenCreator
 ```
 
 Si `dar_acceso` da error, da el permiso en pantalla: BigQuery → dataset → **Compartir** → **Administrar permisos** → **Agregar principal** (Visualizador de datos de BigQuery para leer; Editor de datos de BigQuery para escribir).
 
-Para los clientes siguientes, el alta en la consola muestra estos mismos cuatro comandos (crear la cuenta, permiso de consultas, lectura del dataset del cliente y permiso para que ECO actúe como ella) con los datos del cliente, y un botón **Verificar acceso** que revisa todo. La consola no crea cuentas de servicio por su cuenta: así no necesita permisos de administración sobre `exekai`.
+Para los clientes siguientes, el alta en la consola muestra cinco comandos (crear la cuenta, permiso de consultas, lectura del dataset del cliente, permiso para que ECO actúe como ella y permiso para que la consola actúe como ella al verificar) con los datos del cliente, y un botón **Verificar acceso** que revisa todo. La consola no crea cuentas de servicio por su cuenta: así no necesita permisos de administración sobre `exekai`.
 
 ## 8. Acceso del grupo con IAP
 

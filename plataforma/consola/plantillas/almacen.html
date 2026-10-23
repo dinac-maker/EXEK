@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Almacén de {{ cliente.nombre }}{% endblock %}
+{% block contenido %}
+{% set por_publicar = componentes|selectattr("en_prueba")|list|length %}
+<div class="cab">
+  <div><h1>Almacén de {{ cliente.nombre }}</h1>
+  <p class="sub">{{ componentes|length }} componentes · {{ por_publicar }} con versión por publicar</p></div>
+  <form method="post" action="/c/{{ cliente.cliente_id }}/sincronizar"><button>Buscar versiones nuevas</button></form>
+</div>
+{% if aviso %}<div class="aviso info">{{ aviso }}</div>{% endif %}
+{{ barra("tabla-almacen", "Buscar componente", [
+  ("tipo", "Tipo", TIPOS.values()|list),
+  ("etiqueta", "Etiqueta", etiquetas.values()|list|sort),
+  ("estado", "Estado", ["Por publicar", "Publicado", "Sin publicar", "Retirado"])]) }}
+<table id="tabla-almacen">
+<thead><tr><th>Componente</th><th>Tipo</th><th>Etiquetas</th><th>En producción</th><th>Portal</th><th></th></tr></thead>
+<tbody>
+{% for c in componentes %}
+{% set estado = "Retirado" if c.estado == "retirado" else ("Por publicar" if c.en_prueba else ("Publicado" if c.version_produccion else "Sin publicar")) %}
+<tr data-tipo="{{ TIPOS[c.tipo] }}" data-etiqueta="{{ c.etiquetas_nombres|join('|') }}" data-estado="{{ estado }}">
+  <td><a href="/c/{{ cliente.cliente_id }}/componentes/{{ c.componente_id }}">{{ c.nombre }}</a><div class="muted">{{ c.componente_id }}</div></td>
+  <td>{{ TIPOS[c.tipo] }}</td>
+  <td>{% for e in c.etiquetas_nombres %}<span class="chip">{{ e }}</span>{% else %}<span class="muted">Sin etiquetas</span>{% endfor %}</td>
+  <td>{% if c.estado == "retirado" %}<span class="muted">Retirado</span>{% elif c.version_produccion %}v{{ c.version_produccion }}{% else %}<span class="muted">—</span>{% endif %}
+      {% if c.en_prueba %}<div class="prueba">en prueba v{{ c.en_prueba }}</div>{% endif %}</td>
+  <td>{{ "Sí" if c.visible_portal else "No" }}</td>
+  <td>{% if c.en_prueba %}
+      <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ c.componente_id }}/publicar"
+            onsubmit="return confirm('¿Publicar esta versión? ECO la usará desde la siguiente conversación.')">
+        <input type="hidden" name="numero" value="{{ c.en_prueba }}"><input type="hidden" name="revision" value="{{ c.revision }}">
+        <button class="primario chico">Publicar v{{ c.en_prueba }}</button></form>
+      {% else %}<a class="boton chico" href="/c/{{ cliente.cliente_id }}/componentes/{{ c.componente_id }}">Versiones</a>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% if not componentes %}<p class="muted">Este cliente todavía no tiene componentes. Aparecen aquí cuando su primera versión llega a main.</p>{% endif %}
+{% endblock %}

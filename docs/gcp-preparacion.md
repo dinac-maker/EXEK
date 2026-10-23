@@ -14,6 +14,13 @@ EXEKAI_ID=exekai            # reemplazar por el ID real
 DATOS=exek-produccion
 DATASET=NewtonAgentSpace
 REPO=dinac-maker/EXEK
+
+# Dar acceso a un dataset. (El comando "bq add-iam-policy-binding" no funciona sobre
+# datasets en estos proyectos: responde "This feature requires allowlisting".)
+# Uso: dar_acceso <proyecto:dataset> <READER|WRITER> <correo>
+dar_acceso() {
+  bq show --format=prettyjson "$1"     | jq --arg r "$2" --arg e "$3" '{access: ((.access + [{role: $r, userByEmail: $e}]) | unique)}' > /tmp/acceso.json     && bq update --source /tmp/acceso.json "$1"
+}
 ```
 
 ## 1. Activar los servicios en EXEKAI
@@ -45,7 +52,7 @@ gcloud projects add-iam-policy-binding "$EXEKAI_ID" --member "serviceAccount:$EC
 gcloud projects add-iam-policy-binding "$EXEKAI_ID" --member "serviceAccount:$ECO_SA" --role roles/bigquery.jobUser
 
 # En exek-produccion: solo lectura del dataset de Districash
-bq add-iam-policy-binding --member "serviceAccount:$ECO_SA" --role roles/bigquery.dataViewer "$DATOS:$DATASET"
+dar_acceso "$DATOS:$DATASET" READER "$ECO_SA"
 ```
 
 ## 4. Conexión de GitHub con GCP, sin llaves (Workload Identity Federation)
@@ -64,7 +71,7 @@ gcloud iam workload-identity-pools providers create-oidc exek --location global 
 gcloud iam service-accounts create github-validacion --display-name "GitHub validación" --project "$EXEKAI_ID"
 GH_SA="github-validacion@${EXEKAI_ID}.iam.gserviceaccount.com"
 gcloud projects add-iam-policy-binding "$EXEKAI_ID" --member "serviceAccount:$GH_SA" --role roles/bigquery.jobUser
-bq add-iam-policy-binding --member "serviceAccount:$GH_SA" --role roles/bigquery.dataViewer "$DATOS:$DATASET"
+dar_acceso "$DATOS:$DATASET" READER "$GH_SA"
 
 NUM=$(gcloud projects describe "$EXEKAI_ID" --format 'value(projectNumber)')
 gcloud iam service-accounts add-iam-policy-binding "$GH_SA" --project "$EXEKAI_ID" \

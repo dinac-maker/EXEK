@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 22 de octubre de 2026 (v13: ECO de prueba desplegado)
+**Última actualización:** 23 de octubre de 2026 (v14: decisiones de la fase 3)
 
 ---
 
@@ -173,6 +173,25 @@ Borrador → En prueba → En producción → Retirada
 | 22/10/2026 | Fase 2: los skills de Districash pasan a v0.2.2 tras la primera prueba con Vertex AI: `perdidos_historico` incluye a los perdidos recientes (no son "más de 180 días") y las facturas del ticket promedio no incluyen devoluciones, también al recalcular periodos. |
 | 22/10/2026 | Fase 2: ECO probado con Vertex AI desde el computador del autor (Google Cloud SDK con la cuenta de Exek, proyecto de cuota `exekai`): pasan los 5 casos de `pruebas/casos.yaml` y las cifras coinciden con BigQuery. Costo estimado de los 5 casos: USD 0,20 a 0,29. |
 | 22/10/2026 | Fase 2: ECO de prueba desplegado en Cloud Run (`eco-districash`, `us-central1`, revisión `eco-districash-00001-qqc`) con la cuenta `eco-prueba`. Sin acceso público: sin credenciales responde 403. Cada ejecución queda en Cloud Logging (`jsonPayload.message = "eco.ejecucion"`). |
+| 23/10/2026 | Fase 3 · Consola Exek: plan aprobado. Registro, versiones guardadas por commit, pantallas (clientes, etiquetas y roles, usuarios, almacén, historial), publicar / volver atrás / retirar, y ECO leyendo el registro (paquete publicado y filtro por rol). |
+| 23/10/2026 | Fase 3: el registro de la Consola Exek vive en un **dataset de BigQuery** (`exekai.exek_registro`), **en lugar de Cloud SQL**. La consola revisa unicidad y referencias antes de guardar y evita cambios simultáneos sobre el mismo dato; ECO guarda en memoria por unos minutos lo que lee del registro. |
+| 23/10/2026 | Fase 3: la consola se construye en **Python**, con páginas armadas en el servidor, y se publica en Cloud Run de `exekai` detrás de **Identity-Aware Proxy (IAP)**. |
+| 23/10/2026 | Fase 3: acceso a la consola por un **grupo de Google** de Exek (`consola@exek.co`, lo crea Dina Silva) con los dos correos autorizados. Todos los miembros del grupo tienen acceso total; no hay perfiles internos por ahora. El historial guarda quién hizo cada cambio. |
+| 23/10/2026 | Fase 3: las versiones de los componentes salen de **paquetes por commit** que GitHub Actions guarda en Cloud Storage al llegar a `main`; cada versión entra al registro como "en prueba". |
+| 23/10/2026 | Fase 3 · D: las etiquetas de versión en Git al publicar (por ejemplo `skill/deteccion-clientes-perdidos/v0.2.2`) se hacen al final de la fase. |
+| 23/10/2026 | Fase 3 · E: los usuarios de los clientes solo se registran (correo y rol); el inicio de sesión llega con el portal (fase 6). |
+| 23/10/2026 | **Un proyecto de GCP por cliente**, con su propio dataset de BigQuery. El alta de un cliente en la consola pide nombre, dominio de correo, proyecto y dataset; a partir de ahí se crean sus etiquetas, roles, usuarios y componentes. |
+| 23/10/2026 | Fase 3: el alta de un cliente crea automáticamente el registro, su carpeta en el repositorio (por solicitud de cambio), su espacio en Cloud Storage y **una cuenta de servicio de ECO solo para ese cliente** (`eco-<cliente>@exekai`). El permiso de lectura sobre el dataset del cliente es **guiado**: la consola muestra el comando y un botón "Verificar acceso". |
+| 23/10/2026 | Districash se registra con sus datos actuales (`exek-produccion.NewtonAgentSpace`, de prueba) hasta que tenga proyecto propio. |
+| 23/10/2026 | Fase 3: guía de preparación de GCP en `docs/gcp-preparacion-fase3.md`. Registro en el dataset `exekai.exek_registro` (ubicación `US`); paquetes en el bucket `exekai-paquetes` (`us-central1`); la consola corre con la cuenta `consola-exek`. |
+| 23/10/2026 | Fase 3: ECO consulta los datos de cada cliente **actuando como la cuenta de ese cliente** (`eco-<cliente>@exekai`, con lectura solo sobre su dataset). La cuenta de ECO solo puede actuar como esas cuentas (rol Creador de tokens de cuenta de servicio). Primer cliente: `eco-districash`. |
+| 23/10/2026 | Fase 3: la consola crea la solicitud de cambio de un cliente nuevo con una llave de GitHub de permisos mínimos (solo `dinac-maker/EXEK`: contenido y solicitudes de cambio), guardada en Secret Manager (`github-consola-exek`). |
+| 23/10/2026 | Fase 3 (reemplaza la parte automática de la decisión anterior sobre el alta): **crear la cuenta de ECO de cada cliente nuevo también es guiado**, junto con el permiso sobre su dataset. La consola muestra los comandos con los datos del cliente y el botón "Verificar acceso" revisa ambos. Motivo: crearla de forma automática exigiría que la consola administre todas las cuentas de servicio de `exekai` y pueda actuar como cualquiera de ellas. Siguen automáticos el registro, la carpeta en GitHub y el espacio de paquetes. |
+| 23/10/2026 | Los permisos sobre datasets de BigQuery se dan editando la lista de accesos del dataset (`bq show` + `bq update --source`, función `dar_acceso` de las guías) o en pantalla, porque `bq add-iam-policy-binding` no está habilitado para datasets en estos proyectos. Preparación de GCP de la fase 3 completa y verificada. |
+| 23/10/2026 | `eco-prueba` conserva por ahora permiso de escritura (además de lectura) sobre `exekai.exek_registro`. Se revisará en la fase 4, cuando se decida dónde guarda ECO sus ejecuciones. |
+| 23/10/2026 | Districash es la **empresa demo de Exek**; su dominio de correo en el registro es `exek.co`. |
+| 23/10/2026 | Fase 3 · Registro construido en `plataforma/registro/` (tablas, reglas, carga inicial y pruebas). Las versiones de cada componente se cargan desde el historial de Git. Estados de una versión (se calculan, no se guardan): **en producción** (la publicada), **en prueba** (más nueva que la publicada; tras volver atrás, las más nuevas quedan en prueba y se pueden volver a publicar) y **anterior** (más vieja que la publicada). |
+| 23/10/2026 | Fase 3: las pruebas automáticas del registro corren en memoria y, cuando se pide, contra el dataset `exekai.exek_registro_pruebas`, cuyas tablas se borran solas a las 6 horas. En BigQuery cada operación tarda 1 a 2 segundos: suficiente para la consola, pero la suite completa contra BigQuery tarda unos 45 minutos. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -486,3 +505,17 @@ Rama `fase2/eco-prueba`.
 | Skills de Districash | `clientes/districash/skills/` | v0.2.2. SQL probados en BigQuery: 1.561 clientes perdidos, $2.227.171.160 de venta perdida, 4.697 históricos, fecha de corte 31/03/2026 |
 
 **Fase 2 cumplida** (22/10/2026): pasan los 5 casos, las cifras coinciden con BigQuery con la fecha de corte en la respuesta y ECO está desplegado. Mejoras sugeridas: agregar el ticket promedio a las pruebas automáticas, pasar el registro a una tabla de BigQuery y actualizar las versiones de las acciones de GitHub (aviso de Node.js 20). Nota: la prueba automática no revisa el ticket promedio; esa cifra se revisó a mano contra BigQuery ($1.712.682 en ene–mar 2026 frente a $1.601.543 en ene–mar 2025).
+
+### Fase 3 · Consola Exek (iniciada el 23/10/2026)
+
+Rama `fase3/consola-exek`.
+
+| Pieza | Ruta | Estado |
+|---|---|---|
+| Preparación de GCP | `docs/gcp-preparacion-fase3.md` | Hecha y verificada |
+| Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; 13 pruebas pasan en memoria y en BigQuery. Districash cargado en `exekai.exek_registro` |
+| Versiones guardadas por commit | — | Pendiente |
+| Pantallas de la consola | — | Pendiente (prototipo aprobado el 23/10/2026) |
+| Publicar, volver atrás y retirar en pantalla | — | Pendiente (las reglas ya están en el registro) |
+| ECO lee el registro (paquete publicado y filtro por rol) | — | Pendiente |
+| Despliegue con IAP | — | Pendiente |

@@ -36,6 +36,11 @@ def _crear_registro() -> tuple[Registro, object]:
 
         reg = Registro(AlmacenMemoria())
         cargar(reg)
+        # Segundo cliente de ejemplo, solo en la demostración, para ver la búsqueda en todos los almacenes.
+        reg.crear_cliente("demostracion", "Ferretería Andina (ejemplo)", ["ferreandina.co"], "exek-ferreandina", "ventas",
+                          "ferreteria-andina")
+        reg.registrar_version("ferreteria-andina", "deteccion-clientes-perdidos", "skill",
+                              "Detección de clientes perdidos", "0.1.0", "ejemplo", "Copia de Districash con 90 días")
         return reg, PaquetesLocal(Path(os.environ.get("CONSOLA_PAQUETES_LOCAL", AQUI / ".paquetes")))
     almacen = AlmacenBigQuery(os.environ.get("CONSOLA_PROYECTO", "exekai"),
                               os.environ.get("CONSOLA_DATASET", "exek_registro"))
@@ -186,6 +191,16 @@ async def configurar(request: Request, cid: str, comp: str, quien: str = Depends
     except ErrorRegistro as e:
         return _ir(f"/c/{cid}/componentes/{comp}", error=str(e))
     return _ir(f"/c/{cid}/componentes/{comp}", ok="Cambios guardados")
+
+
+# ---- buscar en todos los almacenes ------------------------------------------------
+
+@app.get("/buscar", response_class=HTMLResponse)
+def buscar(request: Request, q: str = "", quien: str = Depends(usuario_actual)):
+    componentes = registro.almacen_global()
+    clientes = sorted({c["cliente_nombre"] for c in componentes})
+    return _pagina(request, "buscar.html", quien, request.query_params.get("c"), seccion="buscar",
+                   componentes=componentes, q=q.strip(), clientes_con_componentes=clientes)
 
 
 # ---- clientes ---------------------------------------------------------------------

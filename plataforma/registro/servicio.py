@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 
 from registro.almacen import Almacen, Conflicto, Duplicado, ahora
 
@@ -409,6 +410,27 @@ class Registro:
             return []
         suyas = set(rol["etiquetas"])
         return [c for c in self.publicados(cliente_id) if suyas & set(c["etiquetas"])]
+
+    def almacen_global(self) -> list[dict]:
+        """Componentes de todos los clientes, para buscar en todo el almacén y saber qué
+        cliente tiene cada uno. Cuatro consultas en paralelo, sin importar cuántos clientes haya."""
+        with ThreadPoolExecutor(max_workers=4) as hilos:
+            f = {t: hilos.submit(self.almacen.listar, t) for t in ("clientes", "etiquetas", "versiones", "componentes")}
+        clientes = {c["cliente_id"]: c for c in f["clientes"].result()}
+        etiquetas = {(e["cliente_id"], e["etiqueta_id"]): e["nombre"] for e in f["etiquetas"].result()}
+        todas = f["versiones"].result()
+        salida = []
+        for c in f["componentes"].result():
+            vs = self._con_estados(c, [v for v in todas if v["cliente_id"] == c["cliente_id"]
+                                       and v["componente_id"] == c["componente_id"]])
+            cli = clientes.get(c["cliente_id"], {})
+            salida.append({**c, "cliente_nombre": cli.get("nombre", c["cliente_id"]),
+                           "cliente_estado": cli.get("estado"),
+                           "etiquetas_nombres": [etiquetas.get((c["cliente_id"], e), e) for e in c["etiquetas"]],
+                           "en_prueba": next((v["numero"] for v in vs if v["estado"] == "en_prueba"), None),
+                           "ultima_nota": vs[0]["notas"] if vs else None})
+        salida.sort(key=lambda c: (c["nombre"].lower(), c["cliente_nombre"].lower()))
+        return salida
 
     def acceso_eco(self, correo: str) -> dict:
         """Lo que ECO necesita para atender a un usuario: su cliente, su rol, los componentes

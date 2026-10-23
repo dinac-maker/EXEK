@@ -201,3 +201,16 @@ def test_almacen_completo_coincide_con_las_consultas_por_componente(districash):
         assert c["en_prueba"] == districash.version_en_prueba("districash", cid)
         assert [v["estado"] for v in c["versiones"]] == [v["estado"] for v in districash.versiones("districash", cid)]
     assert completo["deteccion-clientes-perdidos"]["en_prueba"] == "0.3.0"
+
+
+def test_buscar_en_todo_el_almacen_dice_que_cliente_lo_tiene(districash):
+    districash.crear_cliente(EXEK, "Ferretería Andina", ["ferreandina.co"], "exek-ferreandina", "ventas")
+    districash.registrar_version("ferreteria-andina", "deteccion-clientes-perdidos", "skill",
+                                 "Detección de clientes perdidos", "0.1.0", "fff0001")
+    todo = districash.almacen_global()
+    perdidos = [c for c in todo if c["componente_id"] == "deteccion-clientes-perdidos"]
+    assert sorted(c["cliente_nombre"] for c in perdidos) == ["Districash", "Ferretería Andina"]
+    andina = next(c for c in perdidos if c["cliente_id"] == "ferreteria-andina")
+    assert andina["version_produccion"] is None and andina["en_prueba"] == "0.1.0"
+    tablero = next(c for c in todo if c["componente_id"] == "tablero-control-gerencia")
+    assert tablero["etiquetas_nombres"] == ["Gerencia"] and tablero["cliente_nombre"] == "Districash"

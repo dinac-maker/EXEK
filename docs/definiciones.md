@@ -205,6 +205,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Usuarios de prueba en el registro real de Districash: `dina.silva@exek.co` (rol Gerencia) y `comercial.demo@exek.co` (rol Comercial). Probado: Comercial recibe 3 componentes (sin el tablero) y las cifras coinciden con BigQuery; un usuario no registrado es rechazado. |
 | 23/10/2026 | Pantallas del almacén y de componente más rápidas: de 8-11 s a 2-3 s contra el registro real (consultas en paralelo, versiones del cliente en una sola consulta y búsqueda de versiones nuevas en segundo plano). |
 | 23/10/2026 | **Un solo ECO para todos los clientes**: servicio `eco` en Cloud Run, que reemplaza a `eco-districash`. En modo producción el cliente sale del registro según el correo del usuario; cada cliente sigue con su paquete publicado y su propia cuenta de datos (`eco-<cliente>`). El modo prueba usa Districash por defecto. La acción de despliegue ya no pide cliente y valida todos los almacenes. |
+| 23/10/2026 | Consola Exek: **búsqueda en todos los almacenes** (pantalla "Buscar en todo" y caja de búsqueda en el encabezado). Busca por nombre, identificador, tipo, etiqueta o nota de versión y muestra qué cliente tiene cada componente, con su versión en producción o en prueba; se filtra por tipo, cliente y estado. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---

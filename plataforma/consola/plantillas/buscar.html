@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Buscar en todos los almacenes{% endblock %}
+{% block contenido %}
+<div class="cab"><div><h1>Buscar en todos los almacenes</h1>
+<p class="sub">{{ componentes|length }} componentes de {{ clientes_con_componentes|length }} clientes. Busca por nombre, identificador, tipo, etiqueta o nota de versión.</p></div></div>
+{{ barra("tabla-buscar", "Por ejemplo: clientes perdidos", [
+  ("tipo", "Tipo", TIPOS.values()|list),
+  ("cliente", "Cliente", clientes_con_componentes),
+  ("estado", "Estado", ["Por publicar", "Publicado", "Sin publicar", "Retirado"])], q) }}
+<table id="tabla-buscar">
+<thead><tr><th>Componente</th><th>Tipo</th><th>Cliente</th><th>Etiquetas</th><th>En producción</th></tr></thead>
+<tbody>
+{% for c in componentes %}
+{% set estado = "Retirado" if c.estado == "retirado" else ("Por publicar" if c.en_prueba else ("Publicado" if c.version_produccion else "Sin publicar")) %}
+<tr data-tipo="{{ TIPOS[c.tipo] }}" data-cliente="{{ c.cliente_nombre }}" data-estado="{{ estado }}">
+  <td><a href="/c/{{ c.cliente_id }}/componentes/{{ c.componente_id }}">{{ c.nombre }}</a><div class="muted">{{ c.componente_id }}</div>
+      <div class="muted" hidden>{{ c.ultima_nota or "" }}</div></td>
+  <td>{{ TIPOS[c.tipo] }}</td>
+  <td><a href="/c/{{ c.cliente_id }}/almacen">{{ c.cliente_nombre }}</a>{% if c.cliente_estado != "activo" %} <span class="muted">(inactivo)</span>{% endif %}</td>
+  <td>{% for e in c.etiquetas_nombres %}<span class="chip">{{ e }}</span>{% else %}<span class="muted">Sin etiquetas</span>{% endfor %}</td>
+  <td>{% if c.estado == "retirado" %}<span class="muted">Retirado</span>{% elif c.version_produccion %}v{{ c.version_produccion }}{% else %}<span class="muted">—</span>{% endif %}
+      {% if c.en_prueba %}<div class="prueba">en prueba v{{ c.en_prueba }}</div>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% if not componentes %}<p class="muted">Todavía no hay componentes en ningún almacén.</p>{% endif %}
+{% endblock %}

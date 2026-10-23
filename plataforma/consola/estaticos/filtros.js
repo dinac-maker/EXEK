@@ -9,7 +9,11 @@
     const contador = barra.querySelector(".contador");
     const clave = "filtros:" + location.pathname + ":" + barra.dataset.tabla;
     const controles = [...barra.querySelectorAll("input, select")];
-    try { const g = JSON.parse(sessionStorage.getItem(clave) || "{}"); controles.forEach(c => { if (g[c.name] !== undefined) c.value = g[c.name]; }); } catch (e) {}
+    // Si la página llega con una búsqueda (por ejemplo, desde el buscador del encabezado),
+    // manda esa búsqueda y no se recuperan los filtros guardados.
+    if (!("sinMemoria" in barra.dataset)) {
+      try { const g = JSON.parse(sessionStorage.getItem(clave) || "{}"); controles.forEach(c => { if (g[c.name] !== undefined) c.value = g[c.name]; }); } catch (e) {}
+    }
     function aplicar() {
       const q = norm(barra.querySelector("input[type=search]")?.value);
       const listas = [...barra.querySelectorAll("select[data-col]")].filter(s => s.value);

@@ -1,7 +1,7 @@
-{% macro barra(tabla, texto, listas=[]) -%}
-<div class="filtros" data-tabla="{{ tabla }}">
+{% macro barra(tabla, texto, listas=[], valor="") -%}
+<div class="filtros" data-tabla="{{ tabla }}" {% if valor %}data-sin-memoria{% endif %}>
   <span class="muted">Filtrar</span>
-  <input type="search" name="q" placeholder="{{ texto }}">
+  <input type="search" name="q" placeholder="{{ texto }}" value="{{ valor }}">
   {% for col, etiqueta, opciones in listas %}
   <select name="{{ col }}" data-col="{{ col }}"><option value="">{{ etiqueta }}: todos</option>
     {% for o in opciones %}<option>{{ o }}</option>{% endfor %}</select>
@@ -24,6 +24,9 @@
 <header class="hd">
   <img src="/estaticos/logo-exek.png" alt="exek">
   <div class="titulo"><b>Consola Exek</b><span>I-NA · administración de almacenes</span></div>
+  <form action="/buscar" method="get" class="buscador">
+    <input type="search" name="q" placeholder="Buscar en todos los almacenes" aria-label="Buscar en todos los almacenes" value="{{ q if seccion == 'buscar' else '' }}">
+  </form>
   <div class="esp"></div>
   {% if clientes %}
   <label class="muted" for="selector-cliente">Cliente</label>
@@ -39,6 +42,7 @@
 <div class="cuerpo">
 <nav class="menu">
   {% if cid %}<a href="/c/{{ cid }}/almacen" class="{{ 'on' if seccion == 'almacen' }}">Almacén</a>{% endif %}
+  <a href="/buscar" class="{{ 'on' if seccion == 'buscar' }}">Buscar en todo</a>
   <a href="/clientes{% if cid %}?c={{ cid }}{% endif %}" class="{{ 'on' if seccion == 'clientes' }}">Clientes</a>
   {% if cid %}
   <a href="/c/{{ cid }}/roles" class="{{ 'on' if seccion == 'roles' }}">Etiquetas y roles</a>

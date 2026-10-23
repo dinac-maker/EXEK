@@ -118,6 +118,7 @@ Clientes, usuarios, roles, etiquetas, componentes, versiones publicadas e histor
 ```bash
 python -m registro.carga_inicial --en-memoria   # muestra lo que cargaría, sin escribir
 python -m registro.carga_inicial                # crea las tablas que falten y registra a Districash
+python -m registro.sincronizar                  # registra como "en prueba" las versiones nuevas que GitHub dejó en Cloud Storage
 python -m pytest registro                       # pruebas en memoria (segundos); requiere pip install -r requirements-pruebas.txt
 ```
 

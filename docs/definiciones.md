@@ -192,6 +192,8 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Districash es la **empresa demo de Exek**; su dominio de correo en el registro es `exek.co`. |
 | 23/10/2026 | Fase 3 · Registro construido en `plataforma/registro/` (tablas, reglas, carga inicial y pruebas). Las versiones de cada componente se cargan desde el historial de Git. Estados de una versión (se calculan, no se guardan): **en producción** (la publicada), **en prueba** (más nueva que la publicada; tras volver atrás, las más nuevas quedan en prueba y se pueden volver a publicar) y **anterior** (más vieja que la publicada). |
 | 23/10/2026 | Fase 3: las pruebas automáticas del registro corren en memoria y, cuando se pide, contra el dataset `exekai.exek_registro_pruebas`, cuyas tablas se borran solas a las 6 horas. En BigQuery cada operación tarda 1 a 2 segundos: suficiente para la consola, pero la suite completa contra BigQuery tarda unos 45 minutos. |
+| 23/10/2026 | Fase 3 · Versiones guardadas: cuando un cambio llega a `main`, la acción "Validar almacenes" deja el paquete de cada cliente que cambió en `gs://exekai-paquetes/<cliente>/commits/<commit>.zip`, con su manifiesto (`.json`) al final. **GitHub solo sube archivos; no escribe en el registro.** La consola lee esos manifiestos y registra las versiones nuevas como "en prueba" (`registro/sincronizar.py`). El manifiesto del paquete ahora incluye la nota de versión y el autor de cada componente. |
+| 23/10/2026 | Se guardaron en Cloud Storage los paquetes de los 4 commits con versiones anteriores de Districash (`a8f16cb`, `84db223`, `002fa7e`, `66ca0fe`), armados desde Git, para poder volver a cualquiera de ellas. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -514,7 +516,7 @@ Rama `fase3/consola-exek`.
 |---|---|---|
 | Preparación de GCP | `docs/gcp-preparacion-fase3.md` | Hecha y verificada |
 | Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; 13 pruebas pasan en memoria y en BigQuery. Districash cargado en `exekai.exek_registro` |
-| Versiones guardadas por commit | — | Pendiente |
+| Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo; 17 pruebas pasan. Paquetes de las versiones anteriores guardados. La subida automática se verá en acción con el primer cambio que llegue a `main` |
 | Pantallas de la consola | — | Pendiente (prototipo aprobado el 23/10/2026) |
 | Publicar, volver atrás y retirar en pantalla | — | Pendiente (las reglas ya están en el registro) |
 | ECO lee el registro (paquete publicado y filtro por rol) | — | Pendiente |

@@ -199,6 +199,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | El identificador de un cliente tiene máximo 26 caracteres, porque la cuenta `eco-<cliente>` no puede pasar de 30 en GCP. |
 | 23/10/2026 | Fase 3: la consola se despliega a mano con la acción "Desplegar Consola Exek" de GitHub (servicio `consola-exek` en Cloud Run, `us-central1`, cuenta `consola-exek`, imagen en el repositorio `eco` de Artifact Registry). IAP se activa directamente sobre el servicio de Cloud Run (`--iap`), sin balanceador; la consola verifica el token firmado de IAP en cada petición. Antes de desplegar, la acción corre las pruebas del registro. |
 | 23/10/2026 | La subida de paquetes desde GitHub se hace directo con la API de Cloud Storage (`ifGenerationMatch=0`: crear solo si no existe), porque `gcloud storage cp` consulta el destino antes de subir y eso exige permiso de lectura. GitHub sigue con permiso solo de crear archivos en el bucket. |
+| 23/10/2026 | Fase 3: **Consola Exek desplegada** en Cloud Run (`consola-exek`, `us-central1`, revisión `consola-exek-00001-zj7`) con IAP. Sin sesión redirige al inicio de sesión de Google; Dina Silva entró con su cuenta de Exek y vio el almacén de Districash sobre el registro real. Pendiente: la pantalla del almacén tarda de 8 a 11 segundos en cargar. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -521,8 +522,8 @@ Rama `fase3/consola-exek`.
 |---|---|---|
 | Preparación de GCP | `docs/gcp-preparacion-fase3.md` | Hecha y verificada |
 | Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; 13 pruebas pasan en memoria y en BigQuery. Districash cargado en `exekai.exek_registro` |
-| Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo; 17 pruebas pasan. Paquetes de las versiones anteriores guardados. La subida automática se verá en acción con el primer cambio que llegue a `main` |
+| Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo y probado en `main` (paquete del commit `60d256f` guardado por GitHub el 23/10/2026) |
 | Pantallas de la consola | `plataforma/consola/` | Listas y probadas en el navegador en modo demostración. Falta conectarlas al registro real al desplegar |
 | Publicar, volver atrás y retirar en pantalla | `plataforma/consola/` | Listo y probado en modo demostración |
 | ECO lee el registro (paquete publicado y filtro por rol) | — | Pendiente |
-| Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | Listo para correr; la acción solo aparece en *Actions* cuando está en `main` |
+| Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | Desplegada el 23/10/2026: https://consola-exek-l7kl6xx5kq-uc.a.run.app (solo grupo `consola@exek.co`) |

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Historial{% endblock %}
+{% block contenido %}
+<div class="cab"><div><h1>Historial de {{ cliente.nombre }}</h1><p class="sub">Todo cambio queda con fecha y autor.</p></div></div>
+{% set TIPOS_CAMBIO = {"cliente": "Cliente", "etiqueta": "Etiqueta", "rol": "Rol", "usuario": "Usuario", "componente": "Componente", "version": "Versión"} %}
+{{ barra("tabla-historial", "Buscar en el historial", [
+  ("quien", "Quién", historial|map(attribute="quien")|unique|list|sort),
+  ("tipo", "Tipo de cambio", historial|map(attribute="tipo")|unique|map("capitalize")|list|sort)]) }}
+<table id="tabla-historial">
+<thead><tr><th>Fecha</th><th>Quién</th><th>Tipo</th><th>Qué</th></tr></thead>
+<tbody>
+{% for h in historial %}
+<tr data-quien="{{ h.quien }}" data-tipo="{{ h.tipo|capitalize }}">
+  <td class="muted" style="white-space:nowrap">{{ h.fecha|fecha }}</td><td>{{ h.quien }}</td>
+  <td>{{ TIPOS_CAMBIO.get(h.tipo, h.tipo)|capitalize }}</td><td>{{ h.detalle }}</td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

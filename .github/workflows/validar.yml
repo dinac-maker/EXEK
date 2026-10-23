@@ -78,7 +78,26 @@ jobs:
         if: steps.clientes.outputs.lista != ''
         run: |
           for c in ${{ steps.clientes.outputs.lista }}; do
-            python herramientas/empaquetar.py "$c" --salida dist
+            python herramientas/empaquetar.py "$c" --salida dist --zip
+          done
+
+      # Cada commit que llega a main deja el paquete de los clientes que cambiaron en
+      # Cloud Storage. La Consola Exek lo registra como versión "en prueba".
+      - uses: google-github-actions/setup-gcloud@v2
+        if: github.event_name == 'push' && steps.clientes.outputs.lista != '' && vars.GCP_WIF_PROVIDER != ''
+
+      - name: Guardar paquetes en Cloud Storage (solo main)
+        if: github.event_name == 'push' && steps.clientes.outputs.lista != '' && vars.GCP_WIF_PROVIDER != ''
+        env:
+          PAQUETES: ${{ vars.PAQUETES_BUCKET || 'exekai-paquetes' }}
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          for c in ${{ steps.clientes.outputs.lista }}; do
+            id=$(basename "$c")
+            gcloud storage cp --no-clobber "dist/$id.zip" "gs://$PAQUETES/$id/commits/$SHA.zip"
+            # El manifiesto va al final: indica que el paquete de ese commit está completo.
+            gcloud storage cp --no-clobber "dist/$id/exek/manifiesto.json" "gs://$PAQUETES/$id/commits/$SHA.json"
+            echo "Paquete de $id guardado: gs://$PAQUETES/$id/commits/$SHA.zip"
           done
 
       - name: Guardar paquetes

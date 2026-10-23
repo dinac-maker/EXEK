@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}{{ c.nombre }}{% endblock %}
+{% block contenido %}
+<div class="cab">
+  <div><h1>{{ c.nombre }}</h1><p class="sub">{{ c.cliente_id }} · {{ c.dominios|join(", ") }}</p></div>
+  <a class="boton" href="/c/{{ c.cliente_id }}/almacen">Ir al almacén</a>
+</div>
+
+<div class="tarjeta">
+<h2 style="font-size:16px;margin-top:0">Alta del cliente</h2>
+<ol class="pasos">
+  <li><b>Registro</b> — <span class="estado-en_produccion">listo</span> <span class="muted">({{ c.creado|fecha }}, {{ c.creado_por }})</span></li>
+  <li><b>Carpeta en GitHub</b> —
+    {% if solicitud %}<a href="{{ solicitud }}" target="_blank" rel="noopener">solicitud de cambio</a> <span class="muted">(se une a main desde GitHub)</span>
+    {% else %}<span class="estado-en_prueba">pendiente</span>
+      <form method="post" action="/clientes/{{ c.cliente_id }}/solicitud" style="display:inline"><button class="chico">Crear solicitud de cambio</button></form>{% endif %}</li>
+  <li><b>Espacio de paquetes</b> — <span class="estado-en_produccion">listo</span> <span class="muted">(gs://exekai-paquetes/{{ c.cliente_id }}/, se llena con el primer cambio en main)</span></li>
+  <li><b>Acceso de ECO a los datos</b> —
+    {% if c.acceso_verificado %}<span class="estado-en_produccion">verificado</span>{% else %}<span class="estado-en_prueba">pendiente</span>{% endif %}
+    <p class="muted">Corre estos comandos en Cloud Shell (proyecto exekai). Pega antes el bloque de variables de <code>docs/gcp-preparacion-fase3.md</code>, que trae la función <code>dar_acceso</code>.</p>
+    {% for explicacion, comando in comandos %}
+      <div>{{ loop.index }}. {{ explicacion }}</div><pre class="cmd">{{ comando }}</pre>
+    {% endfor %}
+    <form method="post" action="/clientes/{{ c.cliente_id }}/verificar"><button class="primario">Verificar acceso</button></form>
+  </li>
+</ol>
+</div>
+
+<details class="tarjeta">
+<summary>Editar datos del cliente</summary>
+<form method="post" action="/clientes/{{ c.cliente_id }}/editar" style="margin-top:12px">
+  <input type="hidden" name="revision" value="{{ c.revision }}">
+  <div class="form-grid">
+    <label class="campo">Nombre<input name="nombre" value="{{ c.nombre }}" required></label>
+    <label class="campo">Dominios de correo<input name="dominios" value="{{ c.dominios|join(', ') }}" required></label>
+    <label class="campo">Proyecto de GCP<input name="proyecto_datos" value="{{ c.proyecto_datos }}" required></label>
+    <label class="campo">Dataset<input name="dataset" value="{{ c.dataset }}" required></label>
+    <label class="campo">Estado<select name="estado"><option value="activo" {% if c.estado == "activo" %}selected{% endif %}>Activo</option><option value="inactivo" {% if c.estado == "inactivo" %}selected{% endif %}>Inactivo</option></select></label>
+  </div>
+  <p class="muted">Si cambias el proyecto o el dataset, hay que verificar el acceso de nuevo.</p>
+  <button class="primario">Guardar cambios</button>
+</form>
+</details>
+{% endblock %}

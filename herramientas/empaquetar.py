@@ -52,7 +52,8 @@ def cerrar_dependencias(elegidos: set[str], fichas: dict) -> set[str]:
     return elegidos
 
 
-def empaquetar(dir_cliente: Path, salida: Path, solo: set[str] | None) -> Path:
+def empaquetar(dir_cliente: Path, salida: Path, solo: set[str] | None, commit: str | None = None) -> Path:
+    """Arma el paquete. `commit` sirve para armar el de una versión vieja desde una copia del almacén."""
     dir_cliente = dir_cliente.resolve()
     manifiesto = leer_yaml(dir_cliente / "exek.yaml")
     cliente_id = manifiesto["cliente_id"]
@@ -77,7 +78,7 @@ def empaquetar(dir_cliente: Path, salida: Path, solo: set[str] | None) -> Path:
     (destino / "exek").mkdir()
 
     generado = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    commit = commit_actual()
+    commit = commit or commit_actual()
 
     for cid in sorted(incluir):
         ficha, carpeta = fichas[cid], carpetas[cid]
@@ -122,6 +123,8 @@ def empaquetar(dir_cliente: Path, salida: Path, solo: set[str] | None) -> Path:
                 "version": fichas[cid]["version"],
                 "usa_skills": fichas[cid].get("usa_skills", []),
                 "fuentes": fichas[cid].get("fuentes", []),
+                "notas_version": fichas[cid].get("notas_version"),
+                "autor": fichas[cid].get("autor"),
             }
             for cid in sorted(incluir)
         ],

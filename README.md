@@ -22,6 +22,8 @@ EXEK/
 │       └── pruebas/          Preguntas de prueba para ECO
 ├── herramientas/             Validador, empaquetador y creador de componentes
 ├── plataforma/eco/           ECO de prueba: motor, consulta segura de BigQuery, registro y pruebas
+├── plataforma/registro/      Registro de la Consola Exek en BigQuery (clientes, roles, etiquetas, versiones)
+├── plataforma/consola/       Consola Exek: pantallas web para administrar clientes y almacenes
 └── .github/workflows/        Validación automática en cada cambio
 ```
 
@@ -109,3 +111,29 @@ gcloud run services proxy eco-districash --region us-central1 --project exekai
 ```
 
 Luego abre http://localhost:8080/docs → **POST /preguntar** → **Try it out**, escribe `{"pregunta": "...", "usuario": "tu correo"}` y pulsa **Execute**. Para cerrar el túnel pulsa Ctrl + C; si en Windows no responde, cierra la ventana de la terminal. Para que otra persona pueda probarlo, dale el rol Invocador de Cloud Run (paso 5 de `docs/gcp-preparacion.md`). El despliegue en Cloud Run se hace con la acción **Desplegar ECO de prueba** (pestaña *Actions*), después del paso 5 de [`docs/gcp-preparacion.md`](docs/gcp-preparacion.md).
+
+## Registro de la Consola Exek (fase 3)
+
+Clientes, usuarios, roles, etiquetas, componentes, versiones publicadas e historial viven en el dataset `exekai.exek_registro`. Desde la carpeta `plataforma/`:
+
+```bash
+python -m registro.carga_inicial --en-memoria   # muestra lo que cargaría, sin escribir
+python -m registro.carga_inicial                # crea las tablas que falten y registra a Districash
+python -m registro.sincronizar                  # registra como "en prueba" las versiones nuevas que GitHub dejó en Cloud Storage
+python -m pytest registro                       # pruebas en memoria (segundos); requiere pip install -r requirements-pruebas.txt
+```
+
+Para correr las mismas pruebas contra BigQuery (tardan unos 45 minutos), define `REGISTRO_PRUEBAS_DATASET=exek_registro_pruebas`.
+
+### Probar la consola en tu computador
+
+```bash
+pip install -r plataforma/consola/requirements.txt
+python plataforma/consola/demo.py
+```
+
+Abre http://localhost:8081. En modo demostración el registro vive en memoria (con Districash cargado), no se escribe en BigQuery y no se crean solicitudes de cambio en GitHub. Para usar el registro real, desde `plataforma/`: `uvicorn consola.app:app --port 8081`.
+
+### Desplegar la consola
+
+En GitHub, pestaña *Actions* → **Desplegar Consola Exek** → **Run workflow**. La acción corre las pruebas del registro, construye la imagen y despliega `consola-exek` en Cloud Run detrás de IAP. Solo entran los miembros del grupo `consola@exek.co`, con su cuenta de Google de Exek.

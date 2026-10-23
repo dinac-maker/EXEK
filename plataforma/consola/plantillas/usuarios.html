@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="cab"><div><h1>Usuarios de {{ cliente.nombre }}</h1>
+<p class="sub">Solo registro: el inicio de sesión de los clientes llega con el portal (fase 6). Correos de {{ cliente.dominios|join(" o ") }}.</p></div></div>
+{{ barra("tabla-usuarios", "Buscar por correo o nombre", [("rol", "Rol", roles.values()|list), ("estado", "Estado", ["Activo", "Inactivo"])]) }}
+<table id="tabla-usuarios">
+<thead><tr><th>Correo</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+<tbody>
+{% for u in usuarios %}
+<tr data-rol="{{ roles.get(u.rol_id, u.rol_id) }}" data-estado="{{ u.estado|capitalize }}">
+  <td>{{ u.correo }}</td><td>{{ u.nombre or "" }}</td><td>{{ roles.get(u.rol_id, u.rol_id) }}</td>
+  <td class="{{ 'estado-en_produccion' if u.estado == 'activo' else 'muted' }}">{{ u.estado|capitalize }}</td>
+  <td><details><summary>Editar</summary>
+    <form method="post" action="/c/{{ cliente.cliente_id }}/usuarios/{{ u.correo }}">
+      <input type="hidden" name="revision" value="{{ u.revision }}">
+      <div class="form-grid">
+        <label class="campo">Nombre<input name="nombre" value="{{ u.nombre or '' }}"></label>
+        <label class="campo">Rol<select name="rol_id">{% for rid, rn in roles.items() %}<option value="{{ rid }}" {% if rid == u.rol_id %}selected{% endif %}>{{ rn }}</option>{% endfor %}</select></label>
+        <label class="campo">Estado<select name="estado"><option value="activo" {% if u.estado == "activo" %}selected{% endif %}>Activo</option><option value="inactivo" {% if u.estado == "inactivo" %}selected{% endif %}>Inactivo</option></select></label>
+      </div>
+      <button class="primario chico">Guardar</button>
+    </form></details></td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% if not usuarios %}<p class="muted">Todavía no hay usuarios registrados.</p>{% endif %}
+
+<div class="tarjeta" style="margin-top:20px">
+<h2 style="font-size:16px;margin-top:0">Agregar usuario</h2>
+<form method="post" action="/c/{{ cliente.cliente_id }}/usuarios">
+  <div class="form-grid">
+    <label class="campo">Correo<input name="correo" type="email" placeholder="nombre@{{ cliente.dominios[0] }}" required></label>
+    <label class="campo">Nombre<input name="nombre" placeholder="Coordinadora de ventas"></label>
+    <label class="campo">Rol<select name="rol_id" required>{% for rid, rn in roles.items() %}<option value="{{ rid }}">{{ rn }}</option>{% endfor %}</select></label>
+  </div>
+  <button class="primario">Agregar usuario</button>
+</form>
+</div>
+{% endblock %}

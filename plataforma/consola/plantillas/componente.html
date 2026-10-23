@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}{{ comp.nombre }}{% endblock %}
+{% block contenido %}
+<div class="cab">
+  <div><h1>{{ comp.nombre }}</h1>
+  <p class="sub">{{ TIPOS[comp.tipo] }} · {{ comp.componente_id }} ·
+    {% if comp.estado == "retirado" %}retirado{% elif comp.version_produccion %}en producción v{{ comp.version_produccion }}{% else %}sin publicar{% endif %}</p></div>
+  <a class="boton" href="/c/{{ cliente.cliente_id }}/almacen">Volver al almacén</a>
+</div>
+<div class="tarjeta">
+<form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ comp.componente_id }}/configurar">
+  <input type="hidden" name="revision" value="{{ comp.revision }}">
+  <p><b>Etiquetas</b> <span class="muted">(los roles con alguna de estas etiquetas pueden usarlo en ECO)</span></p>
+  {% for e in etiquetas %}<label class="etq-check"><input type="checkbox" name="etiquetas" value="{{ e.etiqueta_id }}" {% if e.etiqueta_id in comp.etiquetas %}checked{% endif %}> {{ e.nombre }}</label>{% endfor %}
+  <p><label><input type="checkbox" name="visible_portal" value="si" {% if comp.visible_portal %}checked{% endif %}> Visible en el portal del cliente</label></p>
+  <button class="primario">Guardar</button>
+</form>
+</div>
+<h2 style="font-size:16px">Versiones</h2>
+{{ barra("tabla-versiones", "Buscar versión, commit o nota", [("estado", "Estado", ESTADOS_VERSION.values()|list)]) }}
+<table id="tabla-versiones">
+<thead><tr><th>Versión</th><th>Estado</th><th>Commit</th><th>Nota</th><th>Llegó</th><th></th></tr></thead>
+<tbody>
+{% for v in versiones %}
+<tr data-estado="{{ ESTADOS_VERSION[v.estado] }}">
+  <td>v{{ v.numero }}</td>
+  <td class="estado-{{ v.estado }}">{{ ESTADOS_VERSION[v.estado] }}</td>
+  <td><a href="https://github.com/dinac-maker/EXEK/commit/{{ v.commit }}" target="_blank" rel="noopener">{{ v.commit }}</a></td>
+  <td>{{ v.notas or "" }}<div class="muted">{{ v.autor or "" }}</div></td>
+  <td class="muted">{{ v.registrada|fecha }}</td>
+  <td>{% if v.estado != "en_produccion" %}
+    <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ comp.componente_id }}/publicar"
+          onsubmit="return confirm('¿Poner en producción esta versión? ECO la usará desde la siguiente conversación.')">
+      <input type="hidden" name="numero" value="{{ v.numero }}"><input type="hidden" name="revision" value="{{ comp.revision }}">
+      <button class="chico {{ 'primario' if v.estado == 'en_prueba' }}">{{ "Publicar" if v.estado == "en_prueba" else "Volver a esta" }}</button>
+    </form>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table>
+{% if comp.estado == "activo" and comp.version_produccion %}
+<div class="tarjeta" style="margin-top:18px">
+  <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ comp.componente_id }}/retirar"
+        onsubmit="return confirm('¿Retirar este componente? ECO dejará de usarlo.')">
+    <input type="hidden" name="revision" value="{{ comp.revision }}">
+    <b>Retirar</b> <span class="muted">ECO deja de usarlo. Después se puede volver a publicar cualquier versión.</span>
+    <button class="peligro">Retirar componente</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

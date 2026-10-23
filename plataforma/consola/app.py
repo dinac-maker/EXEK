@@ -123,7 +123,7 @@ def inicio(quien: str = Depends(usuario_actual)):
 # ---- almacén ----------------------------------------------------------------------
 
 @app.get("/c/{cid}/almacen", response_class=HTMLResponse)
-def almacen(request: Request, cid: str, quien: str = Depends(usuario_actual)):
+def almacen(request: Request, cid: str, q: str = "", quien: str = Depends(usuario_actual)):
     # Las consultas que no dependen entre sí van en paralelo: en BigQuery cada una tarda ~1 s.
     _sincronizar_en_segundo_plano(cid)
     aviso = _avisos.pop(cid, None)
@@ -136,7 +136,7 @@ def almacen(request: Request, cid: str, quien: str = Depends(usuario_actual)):
         return _ir("/clientes", error=f"No existe el cliente '{cid}'.")
     filas = [{**c, "etiquetas_nombres": [etiquetas.get(e, e) for e in c["etiquetas"]]} for c in componentes]
     return _pagina(request, "almacen.html", quien, cid, clientes=clientes, seccion="almacen", componentes=filas,
-                   etiquetas=etiquetas, aviso=aviso)
+                   etiquetas=etiquetas, aviso=aviso, q=q.strip())
 
 
 @app.post("/c/{cid}/sincronizar")
@@ -196,11 +196,13 @@ async def configurar(request: Request, cid: str, comp: str, quien: str = Depends
 # ---- buscar en todos los almacenes ------------------------------------------------
 
 @app.get("/buscar", response_class=HTMLResponse)
-def buscar(request: Request, q: str = "", quien: str = Depends(usuario_actual)):
+def buscar(request: Request, q: str = "", c: str = "", quien: str = Depends(usuario_actual)):
+    """Opción "Todos los clientes" de la pestaña Almacén. `c` es el cliente desde el que se llegó."""
     componentes = registro.almacen_global()
-    clientes = sorted({c["cliente_nombre"] for c in componentes})
-    return _pagina(request, "buscar.html", quien, request.query_params.get("c"), seccion="buscar",
-                   componentes=componentes, q=q.strip(), clientes_con_componentes=clientes)
+    clientes = registro.clientes()
+    cid = c if any(x["cliente_id"] == c for x in clientes) else (clientes[0]["cliente_id"] if clientes else None)
+    return _pagina(request, "buscar.html", quien, cid, clientes=clientes, seccion="buscar", componentes=componentes,
+                   q=q.strip(), clientes_con_componentes=sorted({x["cliente_nombre"] for x in componentes}))
 
 
 # ---- clientes ---------------------------------------------------------------------

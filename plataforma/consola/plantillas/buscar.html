@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block titulo %}Buscar en todos los almacenes{% endblock %}
+{% block titulo %}Almacén · todos los clientes{% endblock %}
 {% block contenido %}
-<div class="cab"><div><h1>Buscar en todos los almacenes</h1>
-<p class="sub">{{ componentes|length }} componentes de {{ clientes_con_componentes|length }} clientes. Busca por nombre, identificador, tipo, etiqueta o nota de versión.</p></div></div>
+<div class="cab"><div><h1>Almacén · todos los clientes</h1>
+<p class="sub">{{ componentes|length }} componentes de {{ clientes_con_componentes|length }} clientes. Busca por nombre, identificador, tipo, etiqueta o nota de versión, y mira qué cliente tiene cada uno.</p></div></div>
+{% if cliente %}{{ alcance(cliente, true) }}{% endif %}
 {{ barra("tabla-buscar", "Por ejemplo: clientes perdidos", [
   ("tipo", "Tipo", TIPOS.values()|list),
   ("cliente", "Cliente", clientes_con_componentes),

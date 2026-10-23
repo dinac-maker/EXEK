@@ -31,3 +31,13 @@
     aplicar();
   });
 })();
+
+// "Buscar en": al cambiar entre el cliente y todos los clientes se lleva el texto del filtro.
+document.querySelectorAll("a[data-lleva-busqueda]").forEach(a => a.addEventListener("click", e => {
+  const texto = document.querySelector(".filtros input[type=search]")?.value.trim();
+  if (!texto) return;
+  e.preventDefault();
+  const url = new URL(a.href, location.href);
+  url.searchParams.set("q", texto);
+  location.href = url.toString();
+}));

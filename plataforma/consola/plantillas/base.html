@@ -10,6 +10,14 @@
   <span class="contador muted"></span>
 </div>
 {%- endmacro %}
+{% macro alcance(cliente_actual, en_todos) -%}
+{# Dónde buscar dentro de la pestaña Almacén: en el cliente elegido o en todos. Lleva el texto del filtro. #}
+<div class="alcance" role="group" aria-label="Dónde buscar">
+  <span class="muted">Buscar en</span>
+  <a href="/c/{{ cliente_actual.cliente_id }}/almacen" class="{{ 'on' if not en_todos }}" data-lleva-busqueda>{{ cliente_actual.nombre }}</a>
+  <a href="/buscar?c={{ cliente_actual.cliente_id }}" class="{{ 'on' if en_todos }}" data-lleva-busqueda>Todos los clientes</a>
+</div>
+{%- endmacro %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -24,9 +32,6 @@
 <header class="hd">
   <img src="/estaticos/logo-exek.png" alt="exek">
   <div class="titulo"><b>Consola Exek</b><span>I-NA · almacén de componentes</span></div>
-  <form action="/buscar" method="get" class="buscador">
-    <input type="search" name="q" placeholder="Buscar en el almacén de componentes" aria-label="Buscar en el almacén de componentes" value="{{ q if seccion == 'buscar' else '' }}">
-  </form>
   <div class="esp"></div>
   {% if clientes %}
   <label class="muted" for="selector-cliente">Cliente</label>
@@ -41,8 +46,7 @@
 </header>
 <div class="cuerpo">
 <nav class="menu">
-  {% if cid %}<a href="/c/{{ cid }}/almacen" class="{{ 'on' if seccion == 'almacen' }}">Almacén</a>{% endif %}
-  <a href="/buscar" class="{{ 'on' if seccion == 'buscar' }}">Buscar en todo</a>
+  {% if cid %}<a href="/c/{{ cid }}/almacen" class="{{ 'on' if seccion in ['almacen', 'buscar'] }}">Almacén</a>{% endif %}
   <a href="/clientes{% if cid %}?c={{ cid }}{% endif %}" class="{{ 'on' if seccion == 'clientes' }}">Clientes</a>
   {% if cid %}
   <a href="/c/{{ cid }}/roles" class="{{ 'on' if seccion == 'roles' }}">Etiquetas y roles</a>

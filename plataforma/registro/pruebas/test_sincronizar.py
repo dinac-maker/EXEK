@@ -34,23 +34,24 @@ def _dejar(paquetes, tmp_path, manifiesto):
 
 
 def test_sincronizar_registra_solo_lo_nuevo(reg, tmp_path):
+    publicada = reg.componente("districash", "deteccion-clientes-perdidos")["version_produccion"]
     paquetes = PaquetesLocal(tmp_path / "bucket")
-    _dejar(paquetes, tmp_path, _manifiesto("aaa1111", "2026-10-24T10:00:00Z", "0.3.0"))
-    assert sincronizar(reg, paquetes, "districash") == [("deteccion-clientes-perdidos", "0.3.0")]
+    _dejar(paquetes, tmp_path, _manifiesto("aaa1111", "2026-10-24T10:00:00Z", "9.0.0"))
+    assert sincronizar(reg, paquetes, "districash") == [("deteccion-clientes-perdidos", "9.0.0")]
     assert sincronizar(reg, paquetes, "districash") == []  # repetir no duplica
-    v = next(v for v in reg.versiones("districash", "deteccion-clientes-perdidos") if v["numero"] == "0.3.0")
+    v = next(v for v in reg.versiones("districash", "deteccion-clientes-perdidos") if v["numero"] == "9.0.0")
     assert v["estado"] == "en_prueba" and v["commit"] == "aaa1111" and v["registrada_por"] == "GitHub"
     assert v["paquete_uri"].endswith("aaa1111.zip")
     # La versión publicada no cambia hasta que alguien la publica.
-    assert reg.componente("districash", "deteccion-clientes-perdidos")["version_produccion"] == "0.2.2"
+    assert reg.componente("districash", "deteccion-clientes-perdidos")["version_produccion"] == publicada
 
 
 def test_la_version_toma_el_primer_commit_en_que_aparecio(reg, tmp_path):
     paquetes = PaquetesLocal(tmp_path / "bucket")
-    _dejar(paquetes, tmp_path, _manifiesto("bbb2222", "2026-10-25T10:00:00Z", "0.3.0"))
-    _dejar(paquetes, tmp_path, _manifiesto("aaa1111", "2026-10-24T10:00:00Z", "0.3.0"))
+    _dejar(paquetes, tmp_path, _manifiesto("bbb2222", "2026-10-25T10:00:00Z", "9.0.0"))
+    _dejar(paquetes, tmp_path, _manifiesto("aaa1111", "2026-10-24T10:00:00Z", "9.0.0"))
     sincronizar(reg, paquetes, "districash")
-    v = next(v for v in reg.versiones("districash", "deteccion-clientes-perdidos") if v["numero"] == "0.3.0")
+    v = next(v for v in reg.versiones("districash", "deteccion-clientes-perdidos") if v["numero"] == "9.0.0")
     assert v["commit"] == "aaa1111"
 
 

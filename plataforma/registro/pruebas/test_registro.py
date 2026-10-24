@@ -148,30 +148,32 @@ def test_usuario_inactivo_no_ve_nada(districash):
 # ---- versiones, publicar, volver atrás y retirar --------------------------------
 
 def test_versiones_y_estados(districash):
+    # Sin números fijos: la carga inicial publica la versión más nueva que haya en Git.
     vs = districash.versiones("districash", "deteccion-clientes-perdidos")
-    assert [(v["numero"], v["estado"]) for v in vs] == [
-        ("0.2.2", "en_produccion"), ("0.2.1", "anterior"), ("0.2.0", "anterior"), ("0.1.0", "anterior")]
+    assert vs[0]["estado"] == "en_produccion" and {v["estado"] for v in vs[1:]} == {"anterior"}
+    assert {"0.1.0", "0.2.0", "0.2.1", "0.2.2"} <= {v["numero"] for v in vs}
     assert districash.registrar_version("districash", "deteccion-clientes-perdidos", "skill",
-                                        "Detección de clientes perdidos", "0.2.2", "66ca0fe") is None  # ya estaba
+                                        "Detección de clientes perdidos", vs[0]["numero"], vs[0]["commit"]) is None  # ya estaba
     districash.registrar_version("districash", "deteccion-clientes-perdidos", "skill",
-                                 "Detección de clientes perdidos", "0.3.0", "abc1234", "Nueva ventana")
-    assert districash.version_en_prueba("districash", "deteccion-clientes-perdidos") == "0.3.0"
+                                 "Detección de clientes perdidos", "9.0.0", "abc1234", "Nueva ventana")
+    assert districash.version_en_prueba("districash", "deteccion-clientes-perdidos") == "9.0.0"
 
 
 def test_publicar_volver_atras_y_retirar(districash):
     cid, comp = "districash", "deteccion-clientes-perdidos"
-    districash.registrar_version(cid, comp, "skill", "Detección de clientes perdidos", "0.3.0", "abc1234")
+    districash.registrar_version(cid, comp, "skill", "Detección de clientes perdidos", "9.0.0", "abc1234")
     c = districash.componente(cid, comp)
-    c = districash.publicar(EXEK, cid, comp, "0.3.0", c["revision"])
-    assert c["version_produccion"] == "0.3.0"
+    c = districash.publicar(EXEK, cid, comp, "9.0.0", c["revision"])
+    assert c["version_produccion"] == "9.0.0"
     with pytest.raises(ErrorRegistro, match="ya está en producción"):
-        districash.publicar(EXEK, cid, comp, "0.3.0", c["revision"])
+        districash.publicar(EXEK, cid, comp, "9.0.0", c["revision"])
     c = districash.publicar(EXEK, cid, comp, "0.2.1", c["revision"])  # volver atrás
     estados = {v["numero"]: v["estado"] for v in districash.versiones(cid, comp)}
     # Lo más nuevo que la versión publicada queda "en prueba": se puede volver a publicar.
-    assert estados == {"0.3.0": "en_prueba", "0.2.2": "en_prueba", "0.2.1": "en_produccion",
-                       "0.2.0": "anterior", "0.1.0": "anterior"}
-    assert districash.version_en_prueba(cid, comp) == "0.3.0"
+    assert estados["0.2.1"] == "en_produccion"
+    assert estados["9.0.0"] == estados["0.2.2"] == "en_prueba"
+    assert estados["0.2.0"] == estados["0.1.0"] == "anterior"
+    assert districash.version_en_prueba(cid, comp) == "9.0.0"
     assert "volvió a la versión 0.2.1" in districash.historial(cid)[0]["detalle"]
     c = districash.retirar(EXEK, cid, comp, c["revision"])
     assert comp not in {x["componente_id"] for x in districash.publicados(cid)}
@@ -195,12 +197,12 @@ def test_la_carga_inicial_se_puede_repetir(districash):
 
 def test_almacen_completo_coincide_con_las_consultas_por_componente(districash):
     districash.registrar_version("districash", "deteccion-clientes-perdidos", "skill",
-                                 "Detección de clientes perdidos", "0.3.0", "abc1234")
+                                 "Detección de clientes perdidos", "9.0.0", "abc1234")
     completo = {c["componente_id"]: c for c in districash.almacen_completo("districash")}
     for cid, c in completo.items():
         assert c["en_prueba"] == districash.version_en_prueba("districash", cid)
         assert [v["estado"] for v in c["versiones"]] == [v["estado"] for v in districash.versiones("districash", cid)]
-    assert completo["deteccion-clientes-perdidos"]["en_prueba"] == "0.3.0"
+    assert completo["deteccion-clientes-perdidos"]["en_prueba"] == "9.0.0"
 
 
 def test_buscar_en_todo_el_almacen_dice_que_cliente_lo_tiene(districash):

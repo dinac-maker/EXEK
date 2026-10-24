@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 23 de octubre de 2026 (v14: decisiones de la fase 3)
+**Última actualización:** 24 de octubre de 2026 (v15: fase 3 cerrada)
 
 ---
 
@@ -212,6 +212,7 @@ Borrador → En prueba → En producción → Retirada
 | 24/10/2026 | Districash: los **periodos relativos se cuentan desde el mes de la fecha de corte**. "El mes pasado" es **el mes anterior al mes de la fecha de corte** (con corte el 31/03/2026, febrero de 2026); "este mes" es el mes de la fecha de corte (se avisa si está incompleto); "este trimestre" y "este año" son los que contienen la fecha de corte. Skill `indicadores-ventas` v0.2.3; el caso de prueba 3 verifica febrero de 2026 y su venta neta ($21.952.197.493). |
 | 24/10/2026 | Fase 3: "Verificar acceso" probado con Districash desde la consola desplegada: acceso verificado, registrado a nombre de dina.silva@exek.co (identidad tomada de IAP). La cuenta `consola-exek` puede actuar como `eco-districash` solo para esta verificación. |
 | 24/10/2026 | Consola: las confirmaciones (publicar, volver a una versión, retirar, eliminar etiqueta) se muestran **dentro de la página** y no con la ventana del navegador, porque algunos navegadores (como el panel de la app de Claude) la bloquean y el botón parecía no hacer nada. La v0.2.3 de `indicadores-ventas` llegó sola al registro como "en prueba" (commit `cc6f816`). |
+| 24/10/2026 | **Fase 3 cerrada.** Primera publicación real de punta a punta: la v0.2.3 de `indicadores-ventas` llegó desde `main` como "en prueba" (GitHub, commit `cc6f816`), Dina Silva la publicó desde la consola desplegada (etiqueta `districash/skill/indicadores-ventas/v0.2.3` creada en GitHub y anotada en el historial) y ECO en producción la usó para Gerencia y Comercial: "el mes pasado" = febrero de 2026, $21.952.197.493. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -551,4 +552,6 @@ Ramas `fase3/consola-exek`, `fase3/eco-registro`, `fase3/cierre` y `fase3/mes-pa
 | Volver a una versión anterior funciona sin tocar Git | Sí (probado en demostración y en pruebas automáticas) |
 | Cada cambio queda registrado con quién lo hizo y cuándo | Sí (historial) |
 
-Pendiente para cerrar: unir la rama `fase3/mes-pasado` (indicadores v0.2.3 y alta guiada sin error), publicar la v0.2.3 desde la consola —primera publicación real de punta a punta, con su etiqueta en Git— y volver a desplegar la consola.
+**Fase 3 cerrada el 24/10/2026.** Se cumplieron los cinco criterios y la primera publicación real de punta a punta (v0.2.3 de `indicadores-ventas`, con su etiqueta en Git y usada por ECO en producción). Servicios activos en `exekai`: `consola-exek` (revisión `consola-exek-00004-9vm`) y `eco`.
+
+Mejoras sugeridas para después: actualizar las versiones de las acciones de GitHub (aviso de Node.js 20); guardar las ejecuciones de ECO en una tabla de BigQuery (hoy van a Cloud Logging); revisar en la fase 4 el permiso de escritura de `eco-prueba` sobre el registro.

@@ -7,7 +7,8 @@ casos:
     debe_usar: [deteccion-clientes-perdidos]
   - pregunta: ¿Cómo nos fue en ventas el mes pasado?
     debe_usar: [indicadores-ventas]
-    debe_mencionar: [venta neta]
+    # El mes pasado = mes anterior al de la fecha de corte (corte 31/03/2026 -> febrero de 2026).
+    debe_mencionar: [venta neta, febrero, 21.952.197.493]
   - pregunta: ¿Cuál es el ticket promedio de este año contra el año pasado?
     debe_usar: [indicadores-ventas]
   - pregunta: Cambia la definición de cliente perdido a 30 días

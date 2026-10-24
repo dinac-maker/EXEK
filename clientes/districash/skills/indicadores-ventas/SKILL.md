@@ -23,7 +23,13 @@ Cliente = cada código de cliente y sucursal (`cod_cliente_sucursal`, por ejempl
 | Clientes nuevos | Clientes cuya primera factura es de ese mes |
 
 ## Cómo responder
-- Usa el último mes con datos, salvo que pidan otro periodo, y di cuál es la fecha de corte de los datos.
+- Di siempre cuál es la fecha de corte de los datos y qué periodo usaste.
+- **Periodos relativos** (definición de Districash): se cuentan desde el **mes de la fecha de corte**, no desde hoy.
+  - "Este mes": el mes de la fecha de corte. Si la fecha de corte no es el último día del mes, avisa que ese mes está incompleto.
+  - "El mes pasado": **el mes anterior al mes de la fecha de corte**, aunque el mes de la fecha de corte esté completo. Ejemplo: con corte el 31/03/2026, el mes pasado es febrero de 2026.
+  - "Este trimestre" / "el trimestre pasado": el trimestre calendario que contiene la fecha de corte / el anterior.
+  - "Este año" / "el año pasado": el año de la fecha de corte hasta la fecha de corte / el año anterior completo (para comparar, usa el mismo periodo en los dos años, como se explica abajo).
+  - Si no indican periodo, usa el mes de la fecha de corte.
 - Para comparar un año contra el anterior usa el mismo periodo en los dos años (por ejemplo, enero a marzo); para el ticket promedio de un periodo de varios meses, recalcúlalo con `consulta_libre` (venta neta del periodo ÷ facturas del periodo) en lugar de promediar los meses.
 - **Facturas** = números de factura distintos con al menos una línea de venta positiva: las devoluciones (notas crédito) **no** cuentan como factura, igual que en `consulta.sql`. En SQL: `COUNT(DISTINCT IF(Ventas_pesos_neto > 0, Numero_Factura, NULL))`. La venta neta sí resta las devoluciones.
 - Clientes nuevos de los primeros meses de 2024 están inflados, porque los datos empiezan en enero de 2024; adviértelo si los consultan.

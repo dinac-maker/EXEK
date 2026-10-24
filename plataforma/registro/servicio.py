@@ -10,11 +10,15 @@ Estados de una versión (se deducen, no se guardan):
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
 import unicodedata
+import uuid
 from concurrent.futures import ThreadPoolExecutor
+from zoneinfo import ZoneInfo
 
+from registro import calendario
 from registro.almacen import Almacen, Conflicto, Duplicado, ahora
 
 PROYECTO_ECO = "exekai"
@@ -27,6 +31,12 @@ PATRON_PROYECTO = re.compile(r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$")
 PATRON_DATASET = re.compile(r"^[A-Za-z0-9_]{1,1024}$")
 PATRON_CORREO = re.compile(r"^[^@\s]+@([^@\s]+)$")
 PATRON_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
+PATRON_HORA = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+# Precio de lista de BigQuery bajo demanda en US (USD por TiB facturado). Se cuadra cada mes
+# con la exportación de la facturación (decisión del 24/10/2026).
+PRECIO_BIGQUERY_TIB_USD = 6.25
+_UN_DIA = dt.timedelta(days=1)
 
 
 class ErrorRegistro(Exception):
@@ -122,7 +132,14 @@ class Registro:
         return fila
 
     def actualizar_cliente(self, quien: str, cliente_id: str, revision: int, **cambios) -> dict:
-        permitidos = {"nombre", "dominios", "proyecto_datos", "dataset", "estado", "acceso_verificado"}
+        permitidos = {"nombre", "dominios", "proyecto_datos", "dataset", "estado", "acceso_verificado", "margen_pct"}
+        if "margen_pct" in cambios:
+            try:
+                cambios["margen_pct"] = round(float(cambios["margen_pct"]), 4)
+            except (TypeError, ValueError):
+                raise ErrorRegistro("El margen debe ser un número, por ejemplo 0.3 para 30 %.") from None
+            if not 0 <= cambios["margen_pct"] <= 10:
+                raise ErrorRegistro("El margen debe estar entre 0 % y 1000 %.")
         if set(cambios) - permitidos:
             raise ErrorRegistro(f"No se pueden cambiar: {', '.join(sorted(set(cambios) - permitidos))}.")
         antes = self.cliente(cliente_id)
@@ -463,6 +480,198 @@ class Registro:
         if u is None or u["estado"] != "activo":
             return u, []
         return u, self.permitidos_para_rol(u["cliente_id"], u["rol_id"])
+
+    # ---- programaciones (fase 4) --------------------------------------------------
+
+    def programaciones(self, cliente_id: str | None = None) -> list[dict]:
+        return self.almacen.listar("programaciones", **({"cliente_id": cliente_id} if cliente_id else {}))
+
+    def _revisar_programacion(self, cliente: dict, comp: dict, datos: dict) -> dict:
+        if comp["tipo"] not in ("agente", "artefacto"):
+            raise ErrorRegistro("Solo los agentes y los artefactos se pueden programar.")
+        f = datos.get("frecuencia")
+        if f not in calendario.FRECUENCIAS:
+            raise ErrorRegistro("Elige la frecuencia: diaria, semanal, mensual o cada N horas.")
+        hora = (datos.get("hora") or "").strip()
+        if not PATRON_HORA.match(hora):
+            raise ErrorRegistro("Escribe la hora como HH:MM, por ejemplo 07:00.")
+        dias = [d for d in calendario.DIAS if d in (datos.get("dias") or [])]
+        if f == "semanal" and not dias:
+            raise ErrorRegistro("Elige al menos un día de la semana.")
+        dia_mes = datos.get("dia_mes")
+        if f == "mensual" and not (dia_mes and 1 <= int(dia_mes) <= 31):
+            raise ErrorRegistro("Elige el día del mes (1 a 31).")
+        cada = datos.get("cada_horas")
+        if f == "horas" and not (cada and 1 <= int(cada) <= 23):
+            raise ErrorRegistro("Elige cada cuántas horas (1 a 23).")
+        inicio, fin = datos.get("fecha_inicio"), datos.get("fecha_fin")
+        if not inicio:
+            raise ErrorRegistro("Elige la fecha de inicio.")
+        if fin and fin < inicio:
+            raise ErrorRegistro("La fecha de fin no puede ser anterior a la fecha de inicio.")
+        zona = datos.get("zona_horaria") or "America/Bogota"
+        try:
+            ZoneInfo(zona)
+        except Exception:  # noqa: BLE001
+            raise ErrorRegistro(f"Zona horaria desconocida: {zona}.") from None
+        destinatarios = self._revisar_destinatarios(cliente, datos.get("destinatarios") or [])
+        enviar = bool(datos.get("enviar_correo"))
+        if enviar and not destinatarios:
+            raise ErrorRegistro("Para enviar correo, elige al menos un rol o un correo de destino.")
+        p = {"frecuencia": f, "hora": hora, "dias": dias if f == "semanal" else [],
+             "dia_mes": int(dia_mes) if f == "mensual" else None, "cada_horas": int(cada) if f == "horas" else None,
+             "fecha_inicio": inicio, "fecha_fin": fin or None, "zona_horaria": zona,
+             "enviar_correo": enviar, "destinatarios": destinatarios,
+             "canales": ["portal", "correo"] if enviar else ["portal"],
+             "activa": datos.get("activa", True)}
+        p["cron"] = calendario.describir(p)
+        return p
+
+    def _revisar_destinatarios(self, cliente: dict, destinatarios: list[str]) -> list[str]:
+        roles = {r["rol_id"] for r in self.roles(cliente["cliente_id"])}
+        salida = []
+        for d in destinatarios:
+            d = d.strip().lower()
+            if not d:
+                continue
+            if d.startswith("rol:"):
+                if d[4:] not in roles:
+                    raise ErrorRegistro(f"El rol {d[4:]} no existe en {cliente['nombre']}.")
+            else:
+                m = PATRON_CORREO.match(d)
+                if not m or m.group(1) not in cliente["dominios"]:
+                    raise ErrorRegistro(f"{d} no es un correo de {' o '.join(cliente['dominios'])}.")
+            salida.append(d)
+        return sorted(set(salida))
+
+    def crear_programacion(self, quien: str, cliente_id: str, componente_id: str, **datos) -> dict:
+        cliente = self.cliente(cliente_id)
+        comp = self.componente(cliente_id, componente_id)
+        p = self._revisar_programacion(cliente, comp, datos)
+        existentes = {x["programacion_id"] for x in self.programaciones(cliente_id)}
+        base = identificador(f"{componente_id}-{p['frecuencia']}")[:50]
+        pid, n = base, 2
+        while pid in existentes:
+            pid, n = f"{base}-{n}", n + 1
+        fila = {"cliente_id": cliente_id, "programacion_id": pid, "componente_id": componente_id, **p,
+                **self._auditoria(quien)}
+        fila = self._insertar("programaciones", fila, "Ya existe esa programación.")
+        self._anotar(quien, "programacion", "crear", f"Programación de {comp['nombre']}: {p['cron']}"
+                     + (" · con correo" if p["enviar_correo"] else " · sin correo"), cliente_id, pid, despues=fila)
+        return fila
+
+    def actualizar_programacion(self, quien: str, cliente_id: str, programacion_id: str, revision: int, **datos) -> dict:
+        antes = self.almacen.obtener("programaciones", cliente_id=cliente_id, programacion_id=programacion_id)
+        if antes is None:
+            raise ErrorRegistro("Esa programación ya no existe.")
+        cliente = self.cliente(cliente_id)
+        comp = self.componente(cliente_id, antes["componente_id"])
+        p = self._revisar_programacion(cliente, comp, {**antes, **datos})
+        nuevo = self._actualizar("programaciones", {"cliente_id": cliente_id, "programacion_id": programacion_id},
+                                 {**p, **self._cambio(quien)}, revision)
+        estado = "activa" if p["activa"] else "en pausa"
+        self._anotar(quien, "programacion", "actualizar", f"Programación de {comp['nombre']}: {p['cron']} · {estado}"
+                     + (" · con correo" if p["enviar_correo"] else " · sin correo"), cliente_id, programacion_id,
+                     antes={k: antes.get(k) for k in p}, despues=p)
+        return nuevo
+
+    def eliminar_programacion(self, quien: str, cliente_id: str, programacion_id: str, revision: int) -> None:
+        antes = self.almacen.obtener("programaciones", cliente_id=cliente_id, programacion_id=programacion_id)
+        if antes is None:
+            raise ErrorRegistro("Esa programación ya no existe.")
+        try:
+            self.almacen.eliminar("programaciones", {"cliente_id": cliente_id, "programacion_id": programacion_id}, revision)
+        except Conflicto:
+            raise ErrorRegistro("Alguien cambió esta programación mientras la editabas. Recarga la página.") from None
+        self._anotar(quien, "programacion", "eliminar", f"Programación eliminada: {antes['cron']}", cliente_id,
+                     programacion_id, antes=antes)
+
+    def programaciones_pendientes(self, ahora) -> list[tuple[dict, object]]:
+        """[(programación, hora programada)] que el reloj debe correr ahora, de todos los clientes.
+        Solo de componentes publicados y de clientes activos."""
+        clientes = {c["cliente_id"]: c for c in self.clientes() if c["estado"] == "activo"}
+        publicados = {(c["cliente_id"], c["componente_id"]) for cid in clientes for c in self.publicados(cid)}
+        atendidas: dict[str, set] = {}
+        for e in self.almacen.listar("ejecuciones", disparador="programacion"):
+            if e["ocurrencia"] and e["inicio"] >= ahora - calendario.VENTANA - _UN_DIA:
+                atendidas.setdefault(e["programacion_id"], set()).add(e["ocurrencia"])
+        salida = []
+        for p in self.programaciones():
+            if p["cliente_id"] not in clientes or (p["cliente_id"], p["componente_id"]) not in publicados:
+                continue
+            momento = calendario.pendiente(p, ahora, atendidas.get(p["programacion_id"], set()))
+            if momento:
+                salida.append((p, momento))
+        return salida
+
+    # ---- ejecuciones y costos (fase 4) -------------------------------------------
+
+    def iniciar_ejecucion(self, cliente_id: str, disparador: str, *, componente_id: str | None = None,
+                          tipo: str | None = None, version: str | None = None, programacion_id: str | None = None,
+                          ocurrencia=None, usuario: str | None = None) -> dict:
+        if disparador not in ("programacion", "manual", "eco"):
+            raise ErrorRegistro(f"Disparador desconocido: {disparador}.")
+        fila = {"ejecucion_id": uuid.uuid4().hex, "cliente_id": cliente_id, "disparador": disparador,
+                "componente_id": componente_id, "tipo": tipo, "version": version, "programacion_id": programacion_id,
+                "ocurrencia": ocurrencia, "usuario": usuario, "inicio": ahora(), "estado": "en_curso",
+                **self._auditoria(usuario or "reloj")}
+        return self.almacen.insertar("ejecuciones", fila)
+
+    def terminar_ejecucion(self, ejecucion: dict, *, ok: bool, resumen: str | None = None, resultado=None,
+                           error: str | None = None, componentes: list[str] | None = None, modelo: str | None = None,
+                           tokens: dict | None = None, bytes_facturados: int | None = None,
+                           costo_claude_usd: float | None = None, correo_enviado: bool | None = None,
+                           correo_destinatarios: list[str] | None = None, correo_error: str | None = None) -> dict:
+        fin = ahora()
+        tokens = tokens or {}
+        costo_bq = round((bytes_facturados or 0) / 2**40 * PRECIO_BIGQUERY_TIB_USD, 6)
+        cambios = {
+            "fin": fin, "duracion_ms": int((fin - ejecucion["inicio"]).total_seconds() * 1000),
+            "estado": "terminada" if ok else "error", "resumen": (resumen or "")[:2000] or None,
+            "resultado": resultado if isinstance(resultado, (str, type(None))) else _texto(resultado),
+            "error": (error or "")[:2000] or None, "componentes": componentes or [], "modelo": modelo,
+            "tokens_entrada": tokens.get("entrada"), "tokens_salida": tokens.get("salida"),
+            "tokens_cache_lectura": tokens.get("cache_lectura"), "tokens_cache_escritura": tokens.get("cache_escritura"),
+            "bytes_facturados": bytes_facturados, "costo_claude_usd": costo_claude_usd, "costo_bigquery_usd": costo_bq,
+            "costo_total_usd": round((costo_claude_usd or 0) + costo_bq, 6),
+            "correo_enviado": correo_enviado, "correo_destinatarios": correo_destinatarios or [],
+            "correo_error": correo_error, **self._cambio(ejecucion.get("usuario") or "reloj"),
+        }
+        return self.almacen.actualizar("ejecuciones", {"ejecucion_id": ejecucion["ejecucion_id"]}, cambios,
+                                       ejecucion["revision"])
+
+    def ejecuciones(self, cliente_id: str | None = None) -> list[dict]:
+        filas = self.almacen.listar("ejecuciones", **({"cliente_id": cliente_id} if cliente_id else {}))
+        filas.sort(key=lambda e: e["inicio"], reverse=True)
+        return filas
+
+    def costos_del_mes(self, anio: int, mes: int, ejecuciones: list[dict] | None = None) -> list[dict]:
+        """Costo directo por cliente en un mes (Claude + BigQuery), con su detalle por componente
+        y por disparador, y el precio a cobrar según el margen del cliente."""
+        clientes = {c["cliente_id"]: c for c in self.clientes()}
+        filas = ejecuciones if ejecuciones is not None else self.ejecuciones()
+        por_cliente: dict[str, dict] = {}
+        for e in filas:
+            local = e["inicio"].astimezone(ZoneInfo("America/Bogota"))
+            if (local.year, local.month) != (anio, mes) or e["estado"] == "en_curso":
+                continue
+            c = por_cliente.setdefault(e["cliente_id"], {"cliente_id": e["cliente_id"], "claude": 0.0, "bigquery": 0.0,
+                                                         "ejecuciones": 0, "por_componente": {}, "por_disparador": {}})
+            claude, bq = e["costo_claude_usd"] or 0.0, e["costo_bigquery_usd"] or 0.0
+            c["claude"] += claude
+            c["bigquery"] += bq
+            c["ejecuciones"] += 1
+            clave = e["componente_id"] or "Conversaciones con ECO"
+            c["por_componente"][clave] = c["por_componente"].get(clave, 0.0) + claude + bq
+            c["por_disparador"][e["disparador"]] = c["por_disparador"].get(e["disparador"], 0.0) + claude + bq
+        salida = []
+        for cid, c in sorted(por_cliente.items()):
+            cli = clientes.get(cid, {})
+            margen = cli.get("margen_pct") or 0.0
+            directo = c["claude"] + c["bigquery"]
+            salida.append({**c, "cliente_nombre": cli.get("nombre", cid), "costo_directo": round(directo, 4),
+                           "margen_pct": margen, "precio": round(directo * (1 + margen), 4)})
+        return salida
 
     # ---- historial ----------------------------------------------------------------
 

@@ -8,3 +8,4 @@ google-cloud-secret-manager==2.31.0
 google-auth==2.62.0
 PyYAML==6.0.3
 requests==2.34.2
+tzdata==2026.5

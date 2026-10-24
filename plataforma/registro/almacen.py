@@ -138,6 +138,9 @@ class AlmacenBigQuery(Almacen):
         return f"`{self.proyecto}.{self.dataset}.{tabla}`"
 
     def preparar(self) -> None:
+        """Crea las tablas que falten y agrega a las existentes las columnas nuevas.
+        Las columnas que se agregan a una tabla con datos quedan opcionales (BigQuery
+        no permite agregar columnas obligatorias); nunca se borran ni cambian columnas."""
         bq = self.bigquery
         for t in TABLAS.values():
             esquema = [
@@ -147,7 +150,13 @@ class AlmacenBigQuery(Almacen):
             ]
             tabla = bq.Table(f"{self.proyecto}.{self.dataset}.{t.nombre}", schema=esquema)
             tabla.description = t.descripcion
-            self.bq.create_table(tabla, exists_ok=True)
+            tabla = self.bq.create_table(tabla, exists_ok=True)
+            existentes = {f.name for f in tabla.schema}
+            nuevas = [bq.SchemaField(c.nombre, c.tipo, mode="REPEATED" if c.lista else "NULLABLE")
+                      for c in t.columnas if c.nombre not in existentes]
+            if nuevas:
+                tabla.schema = list(tabla.schema) + nuevas
+                self.bq.update_table(tabla, ["schema"])
 
     def _param(self, t: Tabla, nombre: str, valor: Any, alias: str | None = None):
         c = t.columna(nombre)

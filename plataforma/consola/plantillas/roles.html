@@ -13,7 +13,7 @@
 <tr><td><form method="post" action="/c/{{ cliente.cliente_id }}/etiquetas/{{ e.etiqueta_id }}" style="display:flex;gap:6px">
       <input type="hidden" name="revision" value="{{ e.revision }}">
       <input name="nombre" value="{{ e.nombre }}"><button class="chico" name="accion" value="renombrar">Renombrar</button>
-      <button class="chico peligro" name="accion" value="eliminar" onclick="return confirm('¿Eliminar la etiqueta?')">Eliminar</button></form></td>
+      <button class="chico peligro" name="accion" value="eliminar" data-confirmar="¿Eliminar la etiqueta?" data-confirmar-boton="Sí, eliminar">Eliminar</button></form></td>
   <td class="muted">{{ e.etiqueta_id }}</td><td></td></tr>
 {% endfor %}
 </tbody></table>

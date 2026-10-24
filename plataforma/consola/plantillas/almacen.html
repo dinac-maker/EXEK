@@ -27,7 +27,7 @@
   <td>{{ "Sí" if c.visible_portal else "No" }}</td>
   <td>{% if c.en_prueba %}
       <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ c.componente_id }}/publicar"
-            onsubmit="return confirm('¿Publicar esta versión? ECO la usará desde la siguiente conversación.')">
+            data-confirmar="¿Publicar esta versión? ECO la usará desde la siguiente conversación." data-confirmar-boton="Sí, publicar">
         <input type="hidden" name="numero" value="{{ c.en_prueba }}"><input type="hidden" name="revision" value="{{ c.revision }}">
         <button class="primario chico">Publicar v{{ c.en_prueba }}</button></form>
       {% else %}<a class="boton chico" href="/c/{{ cliente.cliente_id }}/componentes/{{ c.componente_id }}">Versiones</a>{% endif %}</td>

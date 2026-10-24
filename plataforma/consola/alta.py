@@ -29,7 +29,8 @@ def comandos_guiados(cliente: dict) -> list[tuple[str, str]]:
     sa = cliente["cuenta_eco"]
     ds = f"{cliente['proyecto_datos']}:{cliente['dataset']}"
     return [
-        ("Crear la cuenta de ECO del cliente",
+        ("Crear la cuenta de ECO del cliente (si ya existe, no hace nada)",
+         f"gcloud iam service-accounts describe {sa} --project {PROYECTO_ECO} >/dev/null 2>&1 || "
          f'gcloud iam service-accounts create eco-{cid} --display-name "ECO {cliente["nombre"]}" --project {PROYECTO_ECO}'),
         ("Permitirle ejecutar consultas (se cobran a exekai)",
          f"gcloud projects add-iam-policy-binding {PROYECTO_ECO} --member serviceAccount:{sa} --role roles/bigquery.jobUser"),

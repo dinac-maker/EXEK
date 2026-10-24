@@ -17,7 +17,11 @@
   <li><b>Espacio de paquetes</b> — <span class="estado-en_produccion">listo</span> <span class="muted">(gs://exekai-paquetes/{{ c.cliente_id }}/, se llena con el primer cambio en main)</span></li>
   <li><b>Acceso de ECO a los datos</b> —
     {% if c.acceso_verificado %}<span class="estado-en_produccion">verificado</span>{% else %}<span class="estado-en_prueba">pendiente</span>{% endif %}
-    <p class="muted">Corre estos comandos en Cloud Shell (proyecto exekai). Pega antes el bloque de variables de <code>docs/gcp-preparacion-fase3.md</code>, que trae la función <code>dar_acceso</code>.</p>
+    {% if c.acceso_verificado %}
+    <p class="muted">El acceso ya está verificado: no hace falta correr los comandos. Están aquí por si cambias el proyecto o el dataset del cliente.</p>
+    {% else %}
+    <p class="muted">Corre estos comandos en Cloud Shell (proyecto exekai) y luego pulsa <b>Verificar acceso</b>. Pega antes el bloque de variables de <code>docs/gcp-preparacion-fase3.md</code>, que trae la función <code>dar_acceso</code>. Se pueden correr varias veces: lo que ya está hecho no cambia.</p>
+    {% endif %}
     {% for explicacion, comando in comandos %}
       <div>{{ loop.index }}. {{ explicacion }}</div><pre class="cmd">{{ comando }}</pre>
     {% endfor %}

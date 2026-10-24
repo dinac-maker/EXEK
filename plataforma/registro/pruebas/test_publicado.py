@@ -37,8 +37,10 @@ def _armar(reg, paquetes, tmp_path, correo):
 def test_gerencia_recibe_todo_lo_publicado(entorno):
     reg, paquetes, tmp = entorno
     destino, versiones = _armar(reg, paquetes, tmp, "gerente.demo@exek.co")
-    assert versiones == {"deteccion-clientes-perdidos": "0.2.2", "indicadores-ventas": "0.2.2",
-                         "monitor-clientes-perdidos": "0.2.0", "tablero-control-gerencia": "0.2.0"}
+    # Cada componente en su versión publicada (no se fijan números: cambian con cada versión nueva).
+    assert versiones == {c["componente_id"]: c["version_produccion"] for c in reg.publicados("districash")}
+    assert set(versiones) == {"deteccion-clientes-perdidos", "indicadores-ventas",
+                              "monitor-clientes-perdidos", "tablero-control-gerencia"}
     assert (destino / "skills" / "deteccion-clientes-perdidos" / "consulta.sql").exists()
     assert (destino / "agents" / "monitor-clientes-perdidos.md").exists()
     assert (destino / "exek" / "fuentes" / "ventas.yaml").exists()

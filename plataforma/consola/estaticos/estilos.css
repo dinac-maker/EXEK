@@ -45,3 +45,4 @@ main{min-width:0;overflow-x:auto}
 .alcance span{padding:0 8px}
 .alcance a{padding:5px 12px;border-radius:6px;text-decoration:none;color:var(--suave)}
 .alcance a.on{background:var(--azul);color:#fff}
+.confirmar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px;padding:8px 10px;border-radius:var(--radio);background:var(--alerta-fondo);color:var(--alerta);font-size:13px}

@@ -41,3 +41,34 @@ document.querySelectorAll("a[data-lleva-busqueda]").forEach(a => a.addEventListe
   url.searchParams.set("q", texto);
   location.href = url.toString();
 }));
+
+// Confirmación dentro de la página (no con la ventana del navegador, que algunos
+// navegadores bloquean y entonces el botón parece no hacer nada). Sirve para formularios
+// con data-confirmar y para botones con data-confirmar (por ejemplo "Eliminar").
+document.addEventListener("submit", e => {
+  const form = e.target;
+  const origen = e.submitter && e.submitter.dataset.confirmar ? e.submitter : form;
+  const pregunta = origen.dataset.confirmar;
+  if (!pregunta || form.dataset.confirmado === "si") return;
+  e.preventDefault();
+  if (form.nextElementSibling && form.nextElementSibling.classList.contains("confirmar")) return;
+  const caja = document.createElement("div");
+  caja.className = "confirmar";
+  caja.setAttribute("role", "alertdialog");
+  const texto = document.createElement("span");
+  texto.textContent = pregunta;
+  const si = document.createElement("button");
+  si.type = "button"; si.className = "primario chico"; si.textContent = origen.dataset.confirmarBoton || "Sí, continuar";
+  const no = document.createElement("button");
+  no.type = "button"; no.className = "chico"; no.textContent = "Cancelar";
+  caja.append(texto, si, no);
+  form.after(caja);
+  si.focus();
+  const boton = e.submitter;
+  si.addEventListener("click", () => {
+    form.dataset.confirmado = "si";
+    si.disabled = true; si.textContent = "Enviando…";
+    form.requestSubmit(boton || undefined);
+  });
+  no.addEventListener("click", () => caja.remove());
+});

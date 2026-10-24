@@ -30,7 +30,7 @@
   <td class="muted">{{ v.registrada|fecha }}</td>
   <td>{% if v.estado != "en_produccion" %}
     <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ comp.componente_id }}/publicar"
-          onsubmit="return confirm('¿Poner en producción esta versión? ECO la usará desde la siguiente conversación.')">
+          data-confirmar="¿Poner en producción esta versión? ECO la usará desde la siguiente conversación." data-confirmar-boton="Sí, ponerla en producción">
       <input type="hidden" name="numero" value="{{ v.numero }}"><input type="hidden" name="revision" value="{{ comp.revision }}">
       <button class="chico {{ 'primario' if v.estado == 'en_prueba' }}">{{ "Publicar" if v.estado == "en_prueba" else "Volver a esta" }}</button>
     </form>{% endif %}</td>
@@ -40,7 +40,7 @@
 {% if comp.estado == "activo" and comp.version_produccion %}
 <div class="tarjeta" style="margin-top:18px">
   <form method="post" action="/c/{{ cliente.cliente_id }}/componentes/{{ comp.componente_id }}/retirar"
-        onsubmit="return confirm('¿Retirar este componente? ECO dejará de usarlo.')">
+        data-confirmar="¿Retirar este componente? ECO dejará de usarlo." data-confirmar-boton="Sí, retirar">
     <input type="hidden" name="revision" value="{{ comp.revision }}">
     <b>Retirar</b> <span class="muted">ECO deja de usarlo. Después se puede volver a publicar cualquier versión.</span>
     <button class="peligro">Retirar componente</button>

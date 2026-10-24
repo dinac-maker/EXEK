@@ -19,7 +19,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from consola import alta
+from consola import alta, github
 from consola.identidad import usuario_actual
 from registro.almacen import AlmacenBigQuery, AlmacenMemoria
 from registro.paquetes import PaquetesGCS, PaquetesLocal
@@ -166,10 +166,24 @@ def componente(request: Request, cid: str, comp: str, quien: str = Depends(usuar
 def publicar(cid: str, comp: str, numero: str = Form(...), revision: int = Form(...),
              quien: str = Depends(usuario_actual)):
     try:
-        registro.publicar(quien, cid, comp, numero, revision)
+        c = registro.publicar(quien, cid, comp, numero, revision)
     except ErrorRegistro as e:
         return _ir(f"/c/{cid}/componentes/{comp}", error=str(e))
-    return _ir(f"/c/{cid}/componentes/{comp}", ok=f"Versión {numero} en producción")
+    ok = f"Versión {numero} en producción"
+    # La etiqueta en Git deja constancia de qué se publicó. Si falla, la publicación ya está hecha.
+    try:
+        v = registro.almacen.obtener("versiones", cliente_id=cid, componente_id=comp, numero=numero)
+        etiqueta, nueva = github.etiquetar_version(cid, c["tipo"], comp, c["nombre"], numero, v["commit"], quien)
+        if nueva:
+            registro._anotar(quien, "version", "etiquetar", f"Etiqueta en Git: {etiqueta}", cid, comp,
+                             despues={"etiqueta": etiqueta, "commit": v["commit"]})
+        ok += f" · etiqueta en Git: {etiqueta}" + ("" if nueva else " (ya existía)")
+    except github.GitHubApagado:
+        ok += " · en demostración no se crean etiquetas en Git"
+    except Exception as e:  # noqa: BLE001
+        return _ir(f"/c/{cid}/componentes/{comp}", ok=ok,
+                   error=f"La versión quedó publicada, pero no se pudo crear su etiqueta en Git: {e}")
+    return _ir(f"/c/{cid}/componentes/{comp}", ok=ok)
 
 
 @app.post("/c/{cid}/componentes/{comp}/retirar")

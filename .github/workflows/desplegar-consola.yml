@@ -31,7 +31,7 @@ jobs:
       - name: Probar el registro antes de desplegar
         run: |
           pip install -r plataforma/consola/requirements.txt -r plataforma/requirements-pruebas.txt
-          cd plataforma && python -m pytest registro -q
+          cd plataforma && python -m pytest registro consola/test_github.py -q
 
       - name: Conectar con GCP
         uses: google-github-actions/auth@v2

@@ -10,18 +10,15 @@ muestra los comandos y "Verificar acceso" comprueba que quedaron bien.
 from __future__ import annotations
 
 import base64
-import json
-import os
 import urllib.error
-import urllib.request
 
 import yaml
+
+from consola import github
 
 PROYECTO_ECO = "exekai"
 CUENTA_ECO_PLATAFORMA = f"eco-prueba@{PROYECTO_ECO}.iam.gserviceaccount.com"
 CUENTA_CONSOLA = f"consola-exek@{PROYECTO_ECO}.iam.gserviceaccount.com"
-REPOSITORIO = os.environ.get("CONSOLA_REPOSITORIO", "dinac-maker/EXEK")
-SECRETO_GITHUB = f"projects/{PROYECTO_ECO}/secrets/github-consola-exek/versions/latest"
 
 
 # ---- pasos guiados ------------------------------------------------------------------
@@ -109,35 +106,14 @@ def archivos_iniciales(cliente: dict) -> dict[str, str]:
     }
 
 
-def _llave_github() -> str:
-    if os.environ.get("GITHUB_TOKEN"):
-        return os.environ["GITHUB_TOKEN"]
-    from google.cloud import secretmanager
-
-    return secretmanager.SecretManagerServiceClient().access_secret_version(
-        name=SECRETO_GITHUB).payload.data.decode().strip()
-
-
-def _github(metodo: str, ruta: str, llave: str, cuerpo: dict | None = None) -> dict:
-    req = urllib.request.Request(
-        f"https://api.github.com/repos/{REPOSITORIO}{ruta}", method=metodo,
-        data=json.dumps(cuerpo).encode() if cuerpo is not None else None,
-        headers={"Authorization": f"Bearer {llave}", "Accept": "application/vnd.github+json",
-                 "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "consola-exek"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read() or b"{}")
-
-
 def crear_solicitud(cliente: dict, quien: str) -> str:
     """Crea la rama alta/<cliente>, sube la carpeta y abre la solicitud de cambio. Devuelve su enlace."""
-    if os.environ.get("CONSOLA_GITHUB") == "apagado":
-        raise RuntimeError("en modo demostración no se crean solicitudes de cambio en GitHub")
-    llave = _llave_github()
+    llave = github.llave()
     cid = cliente["cliente_id"]
     rama = f"alta/{cid}"
-    base = _github("GET", "/git/ref/heads/main", llave)["object"]["sha"]
+    base = github.llamar("GET", "/git/ref/heads/main", llave)["object"]["sha"]
     try:
-        _github("POST", "/git/refs", llave, {"ref": f"refs/heads/{rama}", "sha": base})
+        github.llamar("POST", "/git/refs", llave, {"ref": f"refs/heads/{rama}", "sha": base})
     except urllib.error.HTTPError as e:
         if e.code != 422:  # 422: la rama ya existe (un intento anterior)
             raise
@@ -145,14 +121,14 @@ def crear_solicitud(cliente: dict, quien: str) -> str:
         cuerpo = {"message": f"Alta de {cliente['nombre']}: {ruta.split('/')[-1]}", "branch": rama,
                   "content": base64.b64encode(contenido.encode()).decode()}
         try:
-            cuerpo["sha"] = _github("GET", f"/contents/{ruta}?ref={rama}", llave)["sha"]
+            cuerpo["sha"] = github.llamar("GET", f"/contents/{ruta}?ref={rama}", llave)["sha"]
         except urllib.error.HTTPError:
             pass
-        _github("PUT", f"/contents/{ruta}", llave, cuerpo)
-    existentes = _github("GET", f"/pulls?head={REPOSITORIO.split('/')[0]}:{rama}&state=open", llave)
+        github.llamar("PUT", f"/contents/{ruta}", llave, cuerpo)
+    existentes = github.llamar("GET", f"/pulls?head={github.REPOSITORIO.split('/')[0]}:{rama}&state=open", llave)
     if existentes:
         return existentes[0]["html_url"]
-    pr = _github("POST", "/pulls", llave, {
+    pr = github.llamar("POST", "/pulls", llave, {
         "title": f"Alta del cliente {cliente['nombre']}", "head": rama, "base": "main",
         "body": (f"Carpeta inicial de **{cliente['nombre']}**, creada desde la Consola Exek por {quien}.\n\n"
                  f"- Datos: `{cliente['proyecto_datos']}.{cliente['dataset']}`\n"

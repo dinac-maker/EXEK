@@ -210,6 +210,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Se eliminó el servicio de Cloud Run `eco-districash` (ECO de la fase 2, último uso el 22/10/2026), reemplazado por `eco`. Se conserva la cuenta `eco-districash@exekai`, que es la cuenta de datos de Districash. Servicios activos en `exekai`: `eco` y `consola-exek`. |
 | 24/10/2026 | Fase 3 · D: **al publicar una versión, la consola crea una etiqueta en Git** sobre el commit de esa versión, con el formato `<cliente>/<tipo>/<componente>/v<versión>` (por ejemplo `districash/skill/deteccion-clientes-perdidos/v0.2.2`). Lleva el cliente adelante, a diferencia del ejemplo de la sección 8.4, porque dos clientes pueden tener un componente con el mismo identificador. Cada versión se etiqueta una sola vez; si la etiqueta falla, la publicación igual queda hecha y la consola lo avisa. Las versiones publicadas antes de esto se etiquetan con `python -m consola.etiquetar_publicadas --crear`. |
 | 24/10/2026 | Districash: los **periodos relativos se cuentan desde el mes de la fecha de corte**. "El mes pasado" es **el mes anterior al mes de la fecha de corte** (con corte el 31/03/2026, febrero de 2026); "este mes" es el mes de la fecha de corte (se avisa si está incompleto); "este trimestre" y "este año" son los que contienen la fecha de corte. Skill `indicadores-ventas` v0.2.3; el caso de prueba 3 verifica febrero de 2026 y su venta neta ($21.952.197.493). |
+| 24/10/2026 | Fase 3: "Verificar acceso" probado con Districash desde la consola desplegada: acceso verificado, registrado a nombre de dina.silva@exek.co (identidad tomada de IAP). La cuenta `consola-exek` puede actuar como `eco-districash` solo para esta verificación. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -526,14 +527,27 @@ Rama `fase2/eco-prueba`.
 
 ### Fase 3 · Consola Exek (iniciada el 23/10/2026)
 
-Rama `fase3/consola-exek`.
+Ramas `fase3/consola-exek`, `fase3/eco-registro`, `fase3/cierre` y `fase3/mes-pasado`.
 
 | Pieza | Ruta | Estado |
 |---|---|---|
 | Preparación de GCP | `docs/gcp-preparacion-fase3.md` | Hecha y verificada |
-| Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; 13 pruebas pasan en memoria y en BigQuery. Districash cargado en `exekai.exek_registro` |
-| Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo y probado en `main` (paquete del commit `60d256f` guardado por GitHub el 23/10/2026) |
-| Pantallas de la consola | `plataforma/consola/` | Listas y probadas en el navegador en modo demostración. Falta conectarlas al registro real al desplegar |
-| Publicar, volver atrás y retirar en pantalla | `plataforma/consola/` | Listo y probado en modo demostración |
-| ECO lee el registro (paquete publicado y filtro por rol) | `plataforma/eco/acceso.py`, `registro/paquetes.py` | Desplegado (servicio `eco`) y probado en Cloud Run el 23/10/2026 |
-| Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | Desplegada el 23/10/2026: https://consola-exek-l7kl6xx5kq-uc.a.run.app (solo grupo `consola@exek.co`) |
+| Registro (tablas, reglas, carga inicial) | `plataforma/registro/` | Listo; Districash cargado en `exekai.exek_registro`, con dos usuarios de prueba |
+| Versiones guardadas por commit | `.github/workflows/validar.yml`, `plataforma/registro/paquetes.py`, `sincronizar.py` | Listo y probado en `main` |
+| Pantallas de la consola, con búsqueda en todos los clientes | `plataforma/consola/` | Desplegadas y en uso sobre el registro real |
+| Publicar, volver atrás y retirar, con etiqueta en Git | `plataforma/consola/app.py`, `consola/github.py` | Desplegado; las 4 versiones publicadas tienen su etiqueta |
+| Alta guiada y "Verificar acceso" | `plataforma/consola/alta.py` | Probado con Districash el 24/10/2026: acceso verificado |
+| ECO lee el registro (paquete publicado, filtro por rol, cuenta del cliente) | `plataforma/eco/acceso.py`, `registro/paquetes.py` | Servicio `eco` desplegado y probado en Cloud Run |
+| Despliegue con IAP | `plataforma/consola/Dockerfile`, `.github/workflows/desplegar-consola.yml` | https://consola-exek-l7kl6xx5kq-uc.a.run.app (solo grupo `consola@exek.co`) |
+
+**Criterios de la fase 3 (plan del 23/10/2026):**
+
+| Criterio | Cumplido |
+|---|---|
+| Una persona de Exek entra con su cuenta de Google y ve a Districash con sus etiquetas, roles y usuarios | Sí (23/10/2026) |
+| ECO usa solo las versiones publicadas | Sí (paquete publicado desde Cloud Storage) |
+| El rol Comercial no ve en ECO los componentes de Gerencia | Sí (probado en Cloud Run) |
+| Volver a una versión anterior funciona sin tocar Git | Sí (probado en demostración y en pruebas automáticas) |
+| Cada cambio queda registrado con quién lo hizo y cuándo | Sí (historial) |
+
+Pendiente para cerrar: unir la rama `fase3/mes-pasado` (indicadores v0.2.3 y alta guiada sin error), publicar la v0.2.3 desde la consola —primera publicación real de punta a punta, con su etiqueta en Git— y volver a desplegar la consola.

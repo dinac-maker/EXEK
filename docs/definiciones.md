@@ -2,7 +2,7 @@
 
 **Documento vivo.** Aquí se registran las definiciones del nuevo diseño a medida que se toman.
 **Responsable:** Exek (Dina Silva)
-**Última actualización:** 24 de octubre de 2026 (v15: fase 3 cerrada)
+**Última actualización:** 24 de octubre de 2026 (v16: decisiones de la fase 4)
 
 ---
 
@@ -213,6 +213,17 @@ Borrador → En prueba → En producción → Retirada
 | 24/10/2026 | Fase 3: "Verificar acceso" probado con Districash desde la consola desplegada: acceso verificado, registrado a nombre de dina.silva@exek.co (identidad tomada de IAP). La cuenta `consola-exek` puede actuar como `eco-districash` solo para esta verificación. |
 | 24/10/2026 | Consola: las confirmaciones (publicar, volver a una versión, retirar, eliminar etiqueta) se muestran **dentro de la página** y no con la ventana del navegador, porque algunos navegadores (como el panel de la app de Claude) la bloquean y el botón parecía no hacer nada. La v0.2.3 de `indicadores-ventas` llegó sola al registro como "en prueba" (commit `cc6f816`). |
 | 24/10/2026 | **Fase 3 cerrada.** Primera publicación real de punta a punta: la v0.2.3 de `indicadores-ventas` llegó desde `main` como "en prueba" (GitHub, commit `cc6f816`), Dina Silva la publicó desde la consola desplegada (etiqueta `districash/skill/indicadores-ventas/v0.2.3` creada en GitHub y anotada en el historial) y ECO en producción la usó para Gerencia y Comercial: "el mes pasado" = febrero de 2026, $21.952.197.493. |
+| 24/10/2026 | Fase 4 · Programaciones, ejecuciones y costos: plan aprobado. Programaciones de agentes y artefactos, ejecución automática, historial de ejecuciones, correo opcional y módulo de costos por cliente. |
+| 24/10/2026 | Fase 4: cada programación tiene **fecha de inicio y fecha de fin** (fuera de ese rango no corre), frecuencia (diaria, semanal, mensual o cada N horas), hora, zona horaria, activa o pausada, y **si envía correo o no** y a quién (roles o correos del cliente). Aplica a **agentes y artefactos**. |
+| 24/10/2026 | Fase 4: cada ejecución guarda **fecha y hora de inicio y de fin**, duración, estado, resultado, si se envió correo y a quién, tokens, bytes consultados y costo. **El resultado se guarda siempre**, se envíe correo o no. |
+| 24/10/2026 | Fase 4 · A: en esta fase los resultados se ven en la **Consola Exek**; el portal del cliente (fase 6) mostrará esos mismos datos. |
+| 24/10/2026 | Fase 4 · B: un solo **reloj de Cloud Scheduler cada 15 minutos** despierta a ECO, que corre lo pendiente. Una tarea puede empezar hasta 15 minutos después de su hora. Hay botón "Ejecutar ahora". |
+| 24/10/2026 | Fase 4 · C: las alertas salen de un buzón de Exek (`alertas@exek.co`) con la **API de Gmail**, habilitada por el administrador de Google Workspace. |
+| 24/10/2026 | Fase 4 · D: se activa la **exportación de la facturación de GCP a BigQuery** para cuadrar cada mes los costos calculados con lo que Google cobró. |
+| 24/10/2026 | Fase 4 · E: cada cliente tiene un **margen o tarifa**; el módulo de costos muestra costo y precio a cobrar. |
+| 24/10/2026 | Fase 4 · F: el costo de un cliente incluye también las **conversaciones de sus usuarios con ECO**, no solo las tareas programadas. |
+| 24/10/2026 | Fase 4: los agentes corren con el motor de ECO (versión publicada y cuenta del cliente); los artefactos corren las consultas de sus skills y guardan una "foto" de los datos, sin Claude. Claude, BigQuery: costo exacto por ejecución; Cloud Run, Storage y Scheduler: se reparten entre clientes según su uso. |
+| 24/10/2026 | Fase 4: guía de preparación en `docs/gcp-preparacion-fase4.md`. Cuentas nuevas: `reloj-exek` (solo puede llamar al servicio `eco`) y `correo-exek` (envía desde `alertas@exek.co` con delegación de Workspace limitada a `gmail.send`; ECO firma con ella sin llaves). Reloj: tarea de Cloud Scheduler `reloj-programaciones` (`*/15 * * * *`, America/Bogota), en pausa hasta desplegar. Facturación exportada al dataset `exekai.facturacion`. ECO escribe las ejecuciones en el registro con el permiso de escritura que ya tiene `eco-prueba`. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---

@@ -92,6 +92,20 @@ class AccesoRegistro:
                 self._paquetes[clave] = cargar(destino)
             return self._paquetes[clave]
 
+    def para_componente(self, cliente_id: str, componente_id: str) -> tuple[Cliente, Paquete, dict, object, str | None]:
+        """Paquete publicado con un solo componente (más las skills que use), para correrlo
+        desde una programación o "Ejecutar ahora". Devuelve (cliente, paquete, ficha del
+        componente publicado, credenciales del cliente, cuenta de datos)."""
+        registro_cliente = self.registro.cliente(cliente_id)
+        publicados = self.registro.publicados_con_commit(cliente_id)
+        comp = next((c for c in publicados if c["componente_id"] == componente_id), None)
+        if comp is None:
+            raise SinAcceso(f"{componente_id} no tiene una versión publicada en {registro_cliente['nombre']}.")
+        cliente = cargar_cliente(cliente_id)
+        paquete = self._paquete(cliente_id, [comp], publicados)
+        cuenta = registro_cliente["cuenta_eco"] if actuar_como_cliente() else None
+        return cliente, paquete, comp, (credenciales_de(cuenta) if cuenta else None), cuenta
+
     def atender(self, correo: str) -> Atencion:
         a = self._acceso(correo)
         if not a["elegidos"]:

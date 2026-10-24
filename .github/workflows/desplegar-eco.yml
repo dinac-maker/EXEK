@@ -36,7 +36,7 @@ jobs:
       - name: Probar el registro y el modo producción de ECO
         run: |
           pip install -r plataforma/eco/requirements.txt -r plataforma/requirements-pruebas.txt
-          cd plataforma && python -m pytest registro eco/test_acceso.py -q
+          cd plataforma && python -m pytest registro eco/test_acceso.py eco/test_tareas.py -q
 
       - name: Conectar con GCP
         uses: google-github-actions/auth@v2

@@ -463,16 +463,21 @@ class Registro:
             raise ErrorRegistro(f"{cliente['nombre']} está inactivo en la plataforma.")
         rol = self.almacen.obtener("roles", cliente_id=cliente["cliente_id"], rol_id=u["rol_id"])
         suyas = set(rol["etiquetas"]) if rol else set()
-        publicados = []
-        for c in self.almacen_completo(cliente["cliente_id"]):
+        publicados = self.publicados_con_commit(cliente["cliente_id"])
+        elegidos = [c for c in publicados if suyas & set(c["etiquetas"])]
+        return {"usuario": u, "cliente": cliente, "rol": rol, "elegidos": elegidos, "publicados": publicados}
+
+    def publicados_con_commit(self, cliente_id: str) -> list[dict]:
+        """Componentes publicados con el commit de su versión en producción (para armar paquetes)."""
+        salida = []
+        for c in self.almacen_completo(cliente_id):
             if c["estado"] != "activo" or not c["version_produccion"]:
                 continue
             v = next((v for v in c["versiones"] if v["numero"] == c["version_produccion"]), None)
             if v is not None:
-                publicados.append({**{k: c[k] for k in ("componente_id", "tipo", "nombre", "etiquetas", "version_produccion")},
-                                   "commit": v["commit"]})
-        elegidos = [c for c in publicados if suyas & set(c["etiquetas"])]
-        return {"usuario": u, "cliente": cliente, "rol": rol, "elegidos": elegidos, "publicados": publicados}
+                salida.append({**{k: c[k] for k in ("componente_id", "tipo", "nombre", "etiquetas", "version_produccion")},
+                               "commit": v["commit"]})
+        return salida
 
     def permitidos_para_usuario(self, correo: str) -> tuple[dict | None, list[dict]]:
         """(usuario, componentes que puede usar). Sin usuario activo, no hay componentes."""
@@ -617,16 +622,16 @@ class Registro:
                 **self._auditoria(usuario or "reloj")}
         return self.almacen.insertar("ejecuciones", fila)
 
-    def terminar_ejecucion(self, ejecucion: dict, *, ok: bool, resumen: str | None = None, resultado=None,
-                           error: str | None = None, componentes: list[str] | None = None, modelo: str | None = None,
-                           tokens: dict | None = None, bytes_facturados: int | None = None,
-                           costo_claude_usd: float | None = None, correo_enviado: bool | None = None,
-                           correo_destinatarios: list[str] | None = None, correo_error: str | None = None) -> dict:
+    def _cierre(self, inicio, *, ok: bool, resumen: str | None = None, resultado=None, error: str | None = None,
+                componentes: list[str] | None = None, modelo: str | None = None, tokens: dict | None = None,
+                bytes_facturados: int | None = None, costo_claude_usd: float | None = None,
+                correo_enviado: bool | None = None, correo_destinatarios: list[str] | None = None,
+                correo_error: str | None = None) -> dict:
         fin = ahora()
         tokens = tokens or {}
         costo_bq = round((bytes_facturados or 0) / 2**40 * PRECIO_BIGQUERY_TIB_USD, 6)
-        cambios = {
-            "fin": fin, "duracion_ms": int((fin - ejecucion["inicio"]).total_seconds() * 1000),
+        return {
+            "fin": fin, "duracion_ms": int((fin - inicio).total_seconds() * 1000),
             "estado": "terminada" if ok else "error", "resumen": (resumen or "")[:2000] or None,
             "resultado": resultado if isinstance(resultado, (str, type(None))) else _texto(resultado),
             "error": (error or "")[:2000] or None, "componentes": componentes or [], "modelo": modelo,
@@ -635,10 +640,21 @@ class Registro:
             "bytes_facturados": bytes_facturados, "costo_claude_usd": costo_claude_usd, "costo_bigquery_usd": costo_bq,
             "costo_total_usd": round((costo_claude_usd or 0) + costo_bq, 6),
             "correo_enviado": correo_enviado, "correo_destinatarios": correo_destinatarios or [],
-            "correo_error": correo_error, **self._cambio(ejecucion.get("usuario") or "reloj"),
+            "correo_error": correo_error,
         }
+
+    def terminar_ejecucion(self, ejecucion: dict, **cierre) -> dict:
+        cambios = {**self._cierre(ejecucion["inicio"], **cierre), **self._cambio(ejecucion.get("usuario") or "reloj")}
         return self.almacen.actualizar("ejecuciones", {"ejecucion_id": ejecucion["ejecucion_id"]}, cambios,
                                        ejecucion["revision"])
+
+    def registrar_ejecucion_terminada(self, cliente_id: str, disparador: str, inicio, *, tipo: str | None = None,
+                                      usuario: str | None = None, **cierre) -> dict:
+        """Anota de una vez una ejecución ya terminada (por ejemplo, una conversación de ECO)."""
+        fila = {"ejecucion_id": uuid.uuid4().hex, "cliente_id": cliente_id, "disparador": disparador, "tipo": tipo,
+                "usuario": usuario, "inicio": inicio, **self._cierre(inicio, **cierre),
+                **self._auditoria(usuario or "reloj")}
+        return self.almacen.insertar("ejecuciones", fila)
 
     def ejecuciones(self, cliente_id: str | None = None) -> list[dict]:
         filas = self.almacen.listar("ejecuciones", **({"cliente_id": cliente_id} if cliente_id else {}))

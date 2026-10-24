@@ -52,7 +52,13 @@ gcloud iam service-accounts describe "$RELOJ_SA" --project "$EXEKAI_ID" >/dev/nu
 # El reloj puede llamar al servicio eco (solo a ese)
 gcloud run services add-iam-policy-binding eco --region "$REGION" --project "$EXEKAI_ID" \
   --member "serviceAccount:$RELOJ_SA" --role roles/run.invoker
+
+# La consola también llama a eco para el botón "Ejecutar ahora"
+gcloud run services add-iam-policy-binding eco --region "$REGION" --project "$EXEKAI_ID" \
+  --member "serviceAccount:$CONSOLA_SA" --role roles/run.invoker
 ```
+
+Si ya corriste esta parte antes de que se agregara el permiso de la consola, corre solo el último comando.
 
 ### 1.3 El reloj (queda en pausa hasta desplegar la fase 4)
 

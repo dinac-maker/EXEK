@@ -208,6 +208,7 @@ Borrador → En prueba → En producción → Retirada
 | 23/10/2026 | Consola Exek: **búsqueda en todos los almacenes**, dentro de la pestaña Almacén (selector "Buscar en": el cliente elegido o todos los clientes, conservando el texto buscado). El encabezado dice "I-NA · almacén de componentes". Busca por nombre, identificador, tipo, etiqueta o nota de versión y muestra qué cliente tiene cada componente, con su versión en producción o en prueba; se filtra por tipo, cliente y estado. |
 | 23/10/2026 | Fase 3: **ECO único desplegado** en Cloud Run (servicio `eco`) conectado al registro, y consola actualizada (revisión `consola-exek-00002-7qb`). Probado en Cloud Run: Comercial recibe sus 3 componentes y 1.561 clientes perdidos; Gerencia recibe la venta neta de marzo de 2026 ($27.449.812.336); un correo no registrado es rechazado; sin credenciales responde 403. BigQuery confirma que las consultas las hizo `eco-districash@exekai.iam.gserviceaccount.com`. |
 | 23/10/2026 | Se eliminó el servicio de Cloud Run `eco-districash` (ECO de la fase 2, último uso el 22/10/2026), reemplazado por `eco`. Se conserva la cuenta `eco-districash@exekai`, que es la cuenta de datos de Districash. Servicios activos en `exekai`: `eco` y `consola-exek`. |
+| 24/10/2026 | Fase 3 · D: **al publicar una versión, la consola crea una etiqueta en Git** sobre el commit de esa versión, con el formato `<cliente>/<tipo>/<componente>/v<versión>` (por ejemplo `districash/skill/deteccion-clientes-perdidos/v0.2.2`). Lleva el cliente adelante, a diferencia del ejemplo de la sección 8.4, porque dos clientes pueden tener un componente con el mismo identificador. Cada versión se etiqueta una sola vez; si la etiqueta falla, la publicación igual queda hecha y la consola lo avisa. Las versiones publicadas antes de esto se etiquetan con `python -m consola.etiquetar_publicadas --crear`. |
 | 29/09/2026 (se mantiene) | Toda la IA usa modelos Claude a través de Vertex AI, dentro de GCP. |
 
 ---
@@ -450,7 +451,7 @@ flowchart LR
 
 **C. Publicar** (Consola Exek)
 1. El autor revisa en el ECO de prueba y pulsa **Publicar** en la consola.
-2. La consola registra la versión en producción, crea la etiqueta en Git (por ejemplo, `skill/deteccion-clientes-perdidos/v0.1.0`) y Cloud Build arma el nuevo paquete del cliente.
+2. La consola registra la versión en producción, crea la etiqueta en Git (por ejemplo, `districash/skill/deteccion-clientes-perdidos/v0.1.0`) y Cloud Build arma el nuevo paquete del cliente.
 3. ECO y los agentes del cliente usan el paquete nuevo desde la siguiente conversación o ejecución.
 
 **D. Volver atrás o retirar** (Consola Exek)
